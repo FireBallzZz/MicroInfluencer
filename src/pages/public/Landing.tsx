@@ -115,7 +115,7 @@ export default function Landing() {
               </div>
             </div>
 
-            <div className="lg:col-span-5">
+            <div className="hidden lg:block lg:col-span-5">
               <HeroVisual />
             </div>
           </div>
@@ -227,7 +227,7 @@ export default function Landing() {
       {/* ===================== FINAL CTA ===================== */}
       <section className="bg-white py-20">
         <div className="container-page">
-          <div className="relative overflow-hidden rounded-3xl bg-ink-900 text-white px-6 sm:px-12 py-14">
+          <div className="relative overflow-hidden rounded-3xl bg-ink-900 text-white px-5 sm:px-8 lg:px-12 py-10 sm:py-14">
             <div className="absolute -top-24 -right-20 w-96 h-96 rounded-full bg-brand-500/30 blur-3xl" />
             <div className="absolute -bottom-24 -left-20 w-96 h-96 rounded-full bg-brand-500/20 blur-3xl" />
             <div className="relative grid lg:grid-cols-3 gap-8 items-center">
@@ -239,19 +239,19 @@ export default function Landing() {
                   Free to join, takes 60 seconds. Pick a role and explore a fully working demo.
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row lg:flex-col gap-3 lg:items-end">
+              <div className="flex flex-col gap-3">
                 {dashboardLink ? (
-                  <Link to={dashboardLink} className="btn btn-primary btn-lg">
+                  <Link to={dashboardLink} className="btn btn-primary btn-lg w-full">
                     Open my dashboard <ArrowRight className="w-4 h-4" />
                   </Link>
                 ) : (
-                  <button onClick={() => navigate('/register/role')} className="btn btn-primary btn-lg">
+                  <button onClick={() => navigate('/register/role')} className="btn btn-primary btn-lg w-full">
                     Get started — it’s free <ArrowRight className="w-4 h-4" />
                   </button>
                 )}
                 <Link
                   to="/login"
-                  className="btn btn-outline-brand btn-lg !text-white !bg-transparent !border-white/30 hover:!bg-white/10"
+                  className="btn btn-outline-brand btn-lg w-full !text-white !bg-transparent !border-white/30 hover:!bg-white/10"
                 >
                   I already have an account
                 </Link>

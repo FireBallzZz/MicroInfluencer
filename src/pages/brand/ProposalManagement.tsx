@@ -85,7 +85,7 @@ export default function ProposalManagement() {
         <div className="space-y-3">
           {mine.map((p) => (
             <div key={p.id} className="card p-5">
-              <div className="flex items-start gap-4 flex-wrap">
+              <div className="flex items-start gap-3 sm:gap-4 flex-wrap">
                 <div className="w-12 h-12 rounded-full bg-brand-50 text-brand-700 flex items-center justify-center font-semibold shrink-0">
                   {p.creatorName.split(' ').map((s) => s[0]).slice(0, 2).join('')}
                 </div>
@@ -98,7 +98,7 @@ export default function ProposalManagement() {
                     {p.creatorNiche} · {p.creatorPlatform} · {fmtNumber(p.creatorFollowers)} followers · {p.creatorEngagement}% engagement
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-left sm:text-right w-full sm:w-auto">
                   <div className="text-lg font-bold text-ink-900">{currency(p.proposedRate)}</div>
                   <div className="text-xs text-ink-500">proposed · {fmtRelativeTime(p.submittedAt)}</div>
                 </div>

@@ -48,7 +48,7 @@ export default function VerifyCode() {
       footer={<><Link to="/login" className="text-brand-600 hover:underline">Cancel</Link></>}
     >
       <form onSubmit={submit}>
-        <div className="flex justify-between gap-2 mb-4">
+        <div className="flex justify-between gap-1.5 sm:gap-2 mb-4">
           {digits.map((d, i) => (
             <input
               key={i}
@@ -58,7 +58,7 @@ export default function VerifyCode() {
               onKeyDown={(e) => onKey(i, e)}
               inputMode="numeric"
               maxLength={1}
-              className="w-12 h-14 text-center text-2xl font-semibold border border-ink-200 rounded-lg focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+              className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-semibold border border-ink-200 rounded-lg focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
             />
           ))}
         </div>

@@ -125,7 +125,7 @@ export default function AppShell() {
     <div className="min-h-screen bg-ink-50">
       {/* Top bar */}
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-ink-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center gap-2 sm:gap-4">
           <button
             className="lg:hidden p-2 -ml-2 text-ink-700"
             onClick={() => setSidebarOpen((o) => !o)}
@@ -133,17 +133,17 @@ export default function AppShell() {
           >
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-          <Link to={user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard'} className="flex items-center gap-2">
+          <Link to={user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard'} className="flex items-center gap-2 shrink-0">
             <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-ink-900 text-lg tracking-tight">Microwork</span>
+            <span className="font-bold text-ink-900 text-lg tracking-tight hidden sm:inline">Microwork</span>
           </Link>
           <div className="hidden md:flex flex-1 max-w-md ml-4">
             <GlobalSearch role={user.role} />
           </div>
           <div className="flex-1 md:hidden" />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <QuickActionsButton actions={[...quickActions]} />
             <NotificationBell />
             <UserMenu onLogout={() => { logout(); navigate('/'); }} />

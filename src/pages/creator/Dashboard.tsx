@@ -130,12 +130,12 @@ export default function CreatorDashboard() {
                     <div className="text-sm font-semibold text-ink-900 truncate">{c.title}</div>
                     <div className="text-xs text-ink-500 truncate">{c.brandName} · {c.category} · {c.requiredPlatform}</div>
                   </div>
-                  <div className="hidden sm:flex items-center gap-3">
-                    <div className="text-right">
+                  <div className="shrink-0 flex items-center gap-2 sm:gap-3">
+                    <span className={`badge ${eligible ? 'badge-green' : 'badge-amber'}`}>{eligible ? 'Eligible' : 'Check fit'}</span>
+                    <div className="text-right hidden sm:block">
                       <div className="text-sm font-semibold text-ink-900">{currency(c.budgetPerCreator)}</div>
                       <div className="text-xs text-ink-500">/ creator</div>
                     </div>
-                    <span className={`badge ${eligible ? 'badge-green' : 'badge-amber'}`}>{eligible ? 'Eligible' : 'Check fit'}</span>
                   </div>
                 </Link>
               );

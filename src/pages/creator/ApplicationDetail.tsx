@@ -99,7 +99,7 @@ export default function ApplicationDetail() {
       )}
 
       {canWithdraw && (
-        <div className="card p-5 flex items-center justify-between">
+        <div className="card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <div className="text-sm font-semibold text-ink-900">Withdraw proposal?</div>
             <div className="text-xs text-ink-500">
@@ -108,7 +108,7 @@ export default function ApplicationDetail() {
                 : 'You can reapply while the campaign is still published.'}
             </div>
           </div>
-          <Button variant="danger" onClick={() => {
+          <Button variant="danger" className="self-start sm:self-auto" onClick={() => {
             if (proposal.status === 'accepted') setReasonModal(true);
             else setConfirmWithdraw(true);
           }}>Withdraw</Button>
