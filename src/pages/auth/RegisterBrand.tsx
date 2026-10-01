@@ -36,20 +36,10 @@ export default function RegisterBrand() {
 
   return (
     <AuthShell
-      title="Sign up as a brand"
-      subtitle="Find the right micro-creators and run real campaigns."
+      title="Microwork"
+      subtitle="Sign up as a brand — find the right creators and run real campaigns."
       footer={<>Have an account? <Link to="/login" className="text-brand-600 hover:underline">Log in</Link></>}
-      side={
-        <div>
-          <h2 className="text-2xl font-bold text-ink-900">What brands get</h2>
-          <ul className="mt-6 space-y-3 text-ink-700">
-            <li>✓ Verified creator stats &amp; audience insights</li>
-            <li>✓ Search &amp; filter to find your niche</li>
-            <li>✓ Create, publish and manage campaigns</li>
-            <li>✓ Shortlist, accept and reject proposals</li>
-          </ul>
-        </div>
-      }
+      variant="brand"
     >
       <form onSubmit={submit} noValidate>
         <FormField label="Your name" error={errors.fullName}>

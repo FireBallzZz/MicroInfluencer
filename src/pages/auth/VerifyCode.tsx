@@ -65,8 +65,8 @@ export default function VerifyCode() {
 
   return (
     <AuthShell
-      title="Check your email"
-      subtitle={`We sent a 6-digit code to ${email}. Enter it below to continue.`}
+      title="Microwork"
+      subtitle={`Check your email — we sent a 6-digit code to ${email}.`}
       footer={<><Link to="/login" className="text-brand-600 hover:underline">Cancel</Link></>}
     >
       <form onSubmit={submit} noValidate>

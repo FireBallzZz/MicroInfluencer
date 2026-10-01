@@ -29,17 +29,9 @@ export default function Login() {
 
   return (
     <AuthShell
-      title="Log in to Microwork"
-      subtitle="Welcome back. Pick your demo role to continue."
-      side={
-        <div>
-          <h2 className="text-2xl font-bold text-ink-900">Demo mode</h2>
-          <p className="mt-3 text-ink-700 leading-relaxed">
-            This is an interactive frontend demo. Pick a role to enter the matching dashboard.
-            Your changes are stored locally in your browser.
-          </p>
-        </div>
-      }
+      title="Microwork"
+      subtitle="Log in to your account. Pick a demo role to continue."
+      variant="neutral"
     >
       <div className="grid grid-cols-2 gap-2 p-1 bg-ink-100 rounded-lg mb-5">
         <button

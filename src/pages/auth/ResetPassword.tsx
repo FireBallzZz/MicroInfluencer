@@ -28,8 +28,8 @@ export default function ResetPassword() {
 
   return (
     <AuthShell
-      title="Choose a new password"
-      subtitle="It should be at least 8 characters and easy for you to remember."
+      title="Microwork"
+      subtitle="Choose a new password — at least 8 characters, easy for you to remember."
       footer={<><Link to="/login" className="text-brand-600 hover:underline">Back to log in</Link></>}
     >
       <form onSubmit={submit} noValidate>

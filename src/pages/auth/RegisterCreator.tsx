@@ -36,20 +36,10 @@ export default function RegisterCreator() {
 
   return (
     <AuthShell
-      title="Sign up as a creator"
-      subtitle="Set up your account to start applying to brand campaigns."
+      title="Microwork"
+      subtitle="Sign up as a creator — set up your profile to apply to brand campaigns."
       footer={<>Have an account? <Link to="/login" className="text-brand-600 hover:underline">Log in</Link></>}
-      side={
-        <div>
-          <h2 className="text-2xl font-bold text-ink-900">You’ll be able to…</h2>
-          <ul className="mt-6 space-y-3 text-ink-700">
-            <li>✓ Build a profile that stands out to brands</li>
-            <li>✓ Connect your YouTube for verified stats</li>
-            <li>✓ Apply to campaigns with one tap</li>
-            <li>✓ Track every proposal in one place</li>
-          </ul>
-        </div>
-      }
+      variant="creator"
     >
       <form onSubmit={submit} noValidate>
         <FormField label="Full name" error={errors.fullName}>

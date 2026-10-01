@@ -21,8 +21,8 @@ export default function ForgotPassword() {
 
   return (
     <AuthShell
-      title="Reset your password"
-      subtitle="Enter the email tied to your account. We’ll send you a 6-digit code."
+      title="Microwork"
+      subtitle="Reset your password — enter the email tied to your account and we’ll send a 6-digit code."
       footer={<><Link to="/login" className="text-brand-600 hover:underline">Back to log in</Link></>}
     >
       {sent ? (
