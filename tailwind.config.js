@@ -43,21 +43,67 @@ export default {
           800: '#1f2123',
           900: '#141618',
         },
+        accent: {
+          mint:   '#7CE6B5',
+          coral:  '#FF7A6C',
+          violet: '#8B7CFF',
+          amber:  '#FFB23F',
+          sky:    '#5BB8FF',
+        },
       },
       fontFamily: {
         sans: ['"Inter"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['"Inter"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         card: '0 1px 2px rgba(20,22,24,.04), 0 1px 1px rgba(20,22,24,.03)',
-        pop: '0 12px 32px -8px rgba(20,22,24,.18), 0 2px 6px rgba(20,22,24,.06)',
+        pop:  '0 12px 32px -8px rgba(20,22,24,.18), 0 2px 6px rgba(20,22,24,.06)',
         hero: '0 30px 80px -30px rgba(20,106,0,.25)',
+        glow: '0 0 0 1px rgba(20,168,0,.12), 0 12px 36px -10px rgba(20,168,0,.35)',
+        ring: '0 0 0 6px rgba(20,168,0,.08)',
       },
       borderRadius: {
         xl: '12px',
         '2xl': '16px',
+        '3xl': '24px',
+        '4xl': '32px',
       },
       transitionTimingFunction: {
         'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        'out-quint': 'cubic-bezier(0.22, 1, 0.36, 1)',
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(ellipse at center, var(--tw-gradient-stops))',
+        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+      },
+      keyframes: {
+        'fade-up': {
+          '0%':   { opacity: '0', transform: 'translateY(16px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'mesh-pan': {
+          '0%, 100%': { transform: 'translate3d(0,0,0) scale(1)' },
+          '50%':      { transform: 'translate3d(2%,-2%,0) scale(1.06)' },
+        },
+        'marquee': {
+          '0%':   { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
+        'shimmer-soft': {
+          '0%':   { backgroundPosition: '-200px 0' },
+          '100%': { backgroundPosition: '200px 0' },
+        },
+        'pulse-ring': {
+          '0%':   { transform: 'scale(.85)', opacity: '.65' },
+          '100%': { transform: 'scale(1.6)',  opacity: '0' },
+        },
+      },
+      animation: {
+        'fade-up':    'fade-up .8s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'mesh-pan':   'mesh-pan 18s ease-in-out infinite',
+        'marquee':    'marquee 28s linear infinite',
+        'marquee-slow':'marquee 48s linear infinite',
+        'pulse-ring': 'pulse-ring 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite',
       },
     },
   },

@@ -217,6 +217,110 @@
   /* Safe-area padding for fixed elements on iOS */
   .safe-top { padding-top: max(env(safe-area-inset-top), 0px); }
   .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
+
+  /* ---------- Modern surfaces & effects ---------- */
+
+  /* Gradient hero — mint + soft violet wash for a modern, energetic feel */
+  .bg-hero-mesh {
+    background-color: #f7fff6;
+    background-image:
+      radial-gradient(60% 40% at 12% 8%, rgba(20,168,0,.18) 0%, rgba(20,168,0,0) 60%),
+      radial-gradient(45% 35% at 92% 12%, rgba(139,124,255,.18) 0%, rgba(139,124,255,0) 60%),
+      radial-gradient(40% 35% at 85% 88%, rgba(124,230,181,.30) 0%, rgba(124,230,181,0) 60%),
+      radial-gradient(40% 30% at 8% 92%, rgba(255,178,63,.18) 0%, rgba(255,178,63,0) 60%),
+      linear-gradient(180deg, #fafff9 0%, #ffffff 75%);
+  }
+  .bg-section-mint {
+    background-image:
+      radial-gradient(60% 50% at 50% 0%, rgba(20,168,0,.07) 0%, rgba(20,168,0,0) 60%),
+      linear-gradient(180deg, #fafff9 0%, #ffffff 100%);
+  }
+  .bg-grid-soft {
+    background-image:
+      linear-gradient(to right, rgba(20,22,24,.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(20,22,24,.04) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: -1px -1px;
+    mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+  }
+  .bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .text-gradient-brand {
+    background-image: linear-gradient(90deg, #14a800 0%, #0c6e00 60%, #4ec147 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .text-gradient-mint {
+    background-image: linear-gradient(90deg, #14a800 0%, #0c6e00 50%, #4ec147 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .text-gradient-light {
+    background-image: linear-gradient(90deg, #ffffff 0%, #d8f5d4 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+  .ring-soft-brand {
+    box-shadow: 0 0 0 6px rgba(20,168,0,.08);
+  }
+  .glass {
+    background-color: rgba(255,255,255,.72);
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    border: 1px solid rgba(255,255,255,.6);
+  }
+  .gradient-border {
+    position: relative;
+    isolation: isolate;
+  }
+  .gradient-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(20,168,0,.55), rgba(124,230,181,.55) 40%, rgba(139,124,255,.45) 100%);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Reveal-on-scroll: hidden by default, .is-visible toggled by hook */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity .9s cubic-bezier(0.22, 1, 0.36, 1),
+                transform .9s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform, opacity;
+  }
+  .reveal.is-visible { opacity: 1; transform: translateY(0); }
+  .reveal[data-delay="100"] { transition-delay: .08s; }
+  .reveal[data-delay="200"] { transition-delay: .16s; }
+  .reveal[data-delay="300"] { transition-delay: .24s; }
+  .reveal[data-delay="400"] { transition-delay: .32s; }
+  .reveal[data-delay="500"] { transition-delay: .40s; }
+
+  /* Marquee for logo strip */
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee 32s linear infinite;
+  }
+  .marquee-mask {
+    mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  }
 }
 
 /* Honor user's reduced-motion preference */
@@ -228,6 +332,11 @@
     scroll-behavior: auto !important;
   }
   html { scroll-behavior: auto; }
+  .reveal, .anim-hero, .anim-float, .anim-page-in, .marquee-track {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
