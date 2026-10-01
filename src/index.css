@@ -4,13 +4,33 @@
 
 @layer base {
   html, body, #root { height: 100%; }
+  html {
+    /* Account for iOS bottom safe area in fixed-bottom elements */
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
   body {
     @apply font-sans text-ink-700 antialiased;
+    /* Stop iOS from zooming the layout on orientation change */
+    text-size-adjust: 100%;
+    /* Use system font as a fallback while Inter loads to avoid FOUT jank */
+  }
+  /* Better touch targets on touch devices without making desktop clickable items look chunky */
+  @media (hover: none) and (pointer: coarse) {
+    .btn { min-height: 44px; }
+    .btn-sm { min-height: 40px; }
+    .nav-pill a, .nav-pill button { min-height: 44px; }
+  }
+  /* Avoid sticky hover states on touch */
+  @media (hover: none) {
+    .btn:active { transform: translateY(1px); }
   }
   *:focus-visible {
     @apply outline-none ring-2 ring-brand-500/40 ring-offset-2 ring-offset-white rounded-full;
   }
   h1, h2, h3 { @apply tracking-tight text-ink-900; }
+  /* Prevent horizontal overflow from absolute decorative elements */
+  body { overflow-x: hidden; }
 }
 
 @layer components {
@@ -89,7 +109,7 @@
            focus-within:border-brand-500 focus-within:shadow-[0_8px_28px_-6px_rgba(20,168,0,.25)];
   }
   .hero-search input {
-    @apply flex-1 h-14 px-5 bg-transparent outline-none text-[15px] placeholder:text-ink-400;
+    @apply flex-1 min-w-0 h-14 px-5 bg-transparent outline-none text-[15px] placeholder:text-ink-400;
   }
   .hero-search button {
     @apply h-12 px-6 m-1.5 rounded-full bg-brand-500 text-white font-semibold text-sm
@@ -193,6 +213,21 @@
   .card-hover:hover {
     @apply -translate-y-0.5 shadow-pop;
   }
+
+  /* Safe-area padding for fixed elements on iOS */
+  .safe-top { padding-top: max(env(safe-area-inset-top), 0px); }
+  .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
+}
+
+/* Honor user's reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  html { scroll-behavior: auto; }
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }

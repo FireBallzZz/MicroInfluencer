@@ -51,18 +51,52 @@ export default function RegisterBrand() {
         </div>
       }
     >
-      <form onSubmit={submit}>
+      <form onSubmit={submit} noValidate>
         <FormField label="Your name" error={errors.fullName}>
-          <Input value={form.fullName} onChange={set('fullName')} placeholder="Jamie Lee" invalid={!!errors.fullName} />
+          <Input
+            value={form.fullName}
+            onChange={set('fullName')}
+            placeholder="Jamie Lee"
+            autoComplete="name"
+            autoCapitalize="words"
+            autoCorrect="off"
+            invalid={!!errors.fullName}
+          />
         </FormField>
         <FormField label="Work email" error={errors.email}>
-          <Input type="email" value={form.email} onChange={set('email')} placeholder="team@brand.com" invalid={!!errors.email} />
+          <Input
+            type="email"
+            value={form.email}
+            onChange={set('email')}
+            placeholder="team@brand.com"
+            autoComplete="email"
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            invalid={!!errors.email}
+          />
         </FormField>
         <FormField label="Username" error={errors.username} helper="3-20 characters, letters, numbers or underscores">
-          <Input value={form.username} onChange={set('username')} placeholder="northwind" invalid={!!errors.username} />
+          <Input
+            value={form.username}
+            onChange={set('username')}
+            placeholder="northwind"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            invalid={!!errors.username}
+          />
         </FormField>
         <FormField label="Password" error={errors.password} helper="At least 8 characters">
-          <Input type="password" value={form.password} onChange={set('password')} placeholder="••••••••" invalid={!!errors.password} />
+          <Input
+            type="password"
+            value={form.password}
+            onChange={set('password')}
+            placeholder="••••••••"
+            autoComplete="new-password"
+            invalid={!!errors.password}
+          />
         </FormField>
         <Button size="lg" className="w-full" disabled={loading}>
           {loading ? 'Creating account…' : 'Create brand account'}

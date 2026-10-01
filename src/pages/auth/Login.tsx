@@ -55,15 +55,30 @@ export default function Login() {
           I’m a brand
         </button>
       </div>
-      <form onSubmit={submit}>
+      <form onSubmit={submit} noValidate>
         <FormField label="Email">
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            autoComplete="email"
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+          />
         </FormField>
         <FormField label="Password">
-          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+          <Input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            autoComplete="current-password"
+          />
         </FormField>
-        {error && <div className="error mb-3">{error}</div>}
-        <div className="flex items-center justify-between text-sm mb-4">
+        {error && <div className="error mb-3" role="alert">{error}</div>}
+        <div className="flex items-center justify-between text-sm mb-4 gap-2 flex-wrap">
           <label className="flex items-center gap-2 text-ink-700">
             <input type="checkbox" className="rounded" /> Keep me signed in
           </label>

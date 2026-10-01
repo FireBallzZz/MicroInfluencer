@@ -32,12 +32,26 @@ export default function ResetPassword() {
       subtitle="It should be at least 8 characters and easy for you to remember."
       footer={<><Link to="/login" className="text-brand-600 hover:underline">Back to log in</Link></>}
     >
-      <form onSubmit={submit}>
+      <form onSubmit={submit} noValidate>
         <FormField label="New password" error={errors.pw}>
-          <Input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••••" invalid={!!errors.pw} />
+          <Input
+            type="password"
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+            placeholder="••••••••"
+            autoComplete="new-password"
+            invalid={!!errors.pw}
+          />
         </FormField>
         <FormField label="Confirm password" error={errors.confirm}>
-          <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="••••••••" invalid={!!errors.confirm} />
+          <Input
+            type="password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            placeholder="••••••••"
+            autoComplete="new-password"
+            invalid={!!errors.confirm}
+          />
         </FormField>
         <Button size="lg" className="w-full" disabled={loading}>
           {loading ? 'Updating…' : 'Update password'}

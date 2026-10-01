@@ -112,9 +112,24 @@ export default function AppShell() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Close drawer on route change
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
+
+  // Close on Esc + lock body scroll while open (mobile drawer)
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSidebarOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+    };
+  }, [sidebarOpen]);
 
   if (!user) return null;
 
@@ -144,7 +159,9 @@ export default function AppShell() {
           </div>
           <div className="flex-1 md:hidden" />
           <div className="flex items-center gap-1 sm:gap-2">
-            <QuickActionsButton actions={[...quickActions]} />
+            <div className="hidden sm:block">
+              <QuickActionsButton actions={[...quickActions]} />
+            </div>
             <NotificationBell />
             <UserMenu onLogout={() => { logout(); navigate('/'); }} />
           </div>

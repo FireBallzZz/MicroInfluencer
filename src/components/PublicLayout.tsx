@@ -101,7 +101,7 @@ export default function PublicLayout() {
         )}
       </header>
       <Outlet />
-      <footer className="border-t border-ink-200 bg-ink-50 mt-20">
+      <footer className="border-t border-ink-200 bg-ink-50 mt-12 sm:mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-sm text-ink-500 flex flex-col sm:flex-row justify-between gap-3">
           <div>© Microwork demo · Built for the internship PRD</div>
           <div className="flex flex-wrap gap-x-5 gap-y-2">

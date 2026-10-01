@@ -46,16 +46,44 @@ export function CampaignForm({
         <h3 className="text-sm font-semibold text-ink-900 mb-4">Budget &amp; logistics</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           <FormField label="Budget per creator (USD)" error={errors?.budgetPerCreator}>
-            <Input type="number" value={values.budgetPerCreator} onChange={(e) => set('budgetPerCreator', Number(e.target.value))} invalid={!!errors?.budgetPerCreator} />
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={values.budgetPerCreator}
+              onChange={(e) => set('budgetPerCreator', Number(e.target.value))}
+              invalid={!!errors?.budgetPerCreator}
+              placeholder="e.g. 1200"
+            />
           </FormField>
           <FormField label="Application deadline" error={errors?.applicationDeadline} helper="Must be at least tomorrow">
-            <Input type="date" min={tomorrow} value={values.applicationDeadline.slice(0, 10)} onChange={(e) => set('applicationDeadline', new Date(e.target.value).toISOString())} invalid={!!errors?.applicationDeadline} />
+            <Input
+              type="date"
+              min={tomorrow}
+              value={values.applicationDeadline.slice(0, 10)}
+              onChange={(e) => set('applicationDeadline', new Date(e.target.value).toISOString())}
+              invalid={!!errors?.applicationDeadline}
+            />
           </FormField>
           <FormField label="Creators needed (1-20)">
-            <Input type="number" min={1} max={20} value={values.creatorsNeeded} onChange={(e) => set('creatorsNeeded', Math.max(1, Math.min(20, Number(e.target.value))))} />
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={20}
+              value={values.creatorsNeeded}
+              onChange={(e) => set('creatorsNeeded', Math.max(1, Math.min(20, Number(e.target.value))))}
+            />
           </FormField>
           <FormField label="Minimum followers (optional)" helper="Leave blank to allow any follower count">
-            <Input type="number" value={values.minFollowers ?? 0} onChange={(e) => set('minFollowers', Number(e.target.value) || undefined)} placeholder="e.g. 10000" />
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              value={values.minFollowers ?? 0}
+              onChange={(e) => set('minFollowers', Number(e.target.value) || undefined)}
+              placeholder="e.g. 10000"
+            />
           </FormField>
         </div>
         <FormField label="Deliverables per creator" helper="Be specific ' creators want clarity">

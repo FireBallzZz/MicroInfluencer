@@ -30,9 +30,18 @@ export default function ForgotPassword() {
           If an account exists for <strong>{email}</strong>, we’ve sent a 6-digit code.
         </div>
       ) : (
-        <form onSubmit={submit}>
+        <form onSubmit={submit} noValidate>
           <FormField label="Email">
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              autoComplete="email"
+              inputMode="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+            />
           </FormField>
           <Button size="lg" className="w-full" disabled={loading}>
             {loading ? 'Sending code…' : 'Send reset code'}

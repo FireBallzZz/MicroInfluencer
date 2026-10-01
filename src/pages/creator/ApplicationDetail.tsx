@@ -89,8 +89,8 @@ export default function ApplicationDetail() {
           <ul className="space-y-1.5">
             {proposal.portfolio.map((p) => (
               <li key={p.id}>
-                <a href={p.url} target="_blank" rel="noreferrer noopener" className="text-sm text-brand-600 hover:underline inline-flex items-center gap-1">
-                  <ExternalLink className="w-4 h-4" /> {p.title || p.url}
+                <a href={p.url} target="_blank" rel="noreferrer noopener" className="text-sm text-brand-600 hover:underline inline-flex items-start gap-1 break-all">
+                  <ExternalLink className="w-4 h-4 mt-0.5 shrink-0" /> <span className="break-all min-w-0">{p.title || p.url}</span>
                 </a>
               </li>
             ))}

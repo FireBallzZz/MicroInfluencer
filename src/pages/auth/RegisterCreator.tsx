@@ -51,21 +51,63 @@ export default function RegisterCreator() {
         </div>
       }
     >
-      <form onSubmit={submit}>
+      <form onSubmit={submit} noValidate>
         <FormField label="Full name" error={errors.fullName}>
-          <Input value={form.fullName} onChange={set('fullName')} placeholder="Avery Johnson" invalid={!!errors.fullName} />
+          <Input
+            value={form.fullName}
+            onChange={set('fullName')}
+            placeholder="Avery Johnson"
+            autoComplete="name"
+            autoCapitalize="words"
+            autoCorrect="off"
+            inputMode="text"
+            invalid={!!errors.fullName}
+          />
         </FormField>
         <FormField label="Email" error={errors.email}>
-          <Input type="email" value={form.email} onChange={set('email')} placeholder="you@example.com" invalid={!!errors.email} />
+          <Input
+            type="email"
+            value={form.email}
+            onChange={set('email')}
+            placeholder="you@example.com"
+            autoComplete="email"
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            invalid={!!errors.email}
+          />
         </FormField>
         <FormField label="Username" error={errors.username} helper="3-20 characters, letters, numbers or underscores">
-          <Input value={form.username} onChange={set('username')} placeholder="avery" invalid={!!errors.username} />
+          <Input
+            value={form.username}
+            onChange={set('username')}
+            placeholder="avery"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            invalid={!!errors.username}
+          />
         </FormField>
-        <FormField label="Mobile number" helper="Optional ' for collaboration reminders">
-          <Input value={form.mobile} onChange={set('mobile')} placeholder="+1 555 0123" />
+        <FormField label="Mobile number" helper="Optional · for collaboration reminders">
+          <Input
+            type="tel"
+            value={form.mobile}
+            onChange={set('mobile')}
+            placeholder="+1 555 0123"
+            autoComplete="tel"
+            inputMode="tel"
+          />
         </FormField>
         <FormField label="Password" error={errors.password} helper="At least 8 characters">
-          <Input type="password" value={form.password} onChange={set('password')} placeholder="••••••••" invalid={!!errors.password} />
+          <Input
+            type="password"
+            value={form.password}
+            onChange={set('password')}
+            placeholder="••••••••"
+            autoComplete="new-password"
+            invalid={!!errors.password}
+          />
         </FormField>
         <Button size="lg" className="w-full" disabled={loading}>
           {loading ? 'Creating account…' : 'Create my account'}

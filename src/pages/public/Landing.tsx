@@ -32,29 +32,29 @@ export default function Landing() {
     <div>
       {/* ===================== HERO ===================== */}
       <section className="relative bg-hero-mint overflow-hidden">
-        <div className="container-page pt-12 pb-20 sm:pt-20 sm:pb-28">
+        <div className="container-page pt-10 pb-16 sm:pt-20 sm:pb-28">
           <div className="grid lg:grid-cols-12 gap-10 items-center">
             <div className="lg:col-span-7">
-              <div className="inline-flex items-center gap-2 bg-white border border-ink-200 text-ink-700 text-xs font-semibold pl-1.5 pr-3 py-1 rounded-full shadow-card">
+              <div className="inline-flex flex-wrap items-center gap-2 bg-white border border-ink-200 text-ink-700 text-xs font-semibold pl-1.5 pr-3 py-1 rounded-full shadow-card max-w-full">
                 <span className="inline-flex items-center gap-1 bg-brand-500 text-white rounded-full px-2 py-0.5">
                   <Sparkles className="w-3 h-3" /> New
                 </span>
-                A marketplace built for micro-influencers
-                <ArrowRight className="w-3.5 h-3.5 text-ink-400" />
+                <span className="whitespace-normal">A marketplace built for micro-influencers</span>
+                <ArrowRight className="w-3.5 h-3.5 text-ink-400 hidden xs:inline sm:inline" />
               </div>
 
-              <h1 className="anim-hero mt-6 text-[44px] sm:text-[56px] lg:text-[64px] leading-[1.05] font-extrabold text-ink-900 tracking-[-0.02em]">
+              <h1 className="anim-hero mt-5 sm:mt-6 text-4xl sm:text-5xl lg:text-[64px] leading-[1.05] font-extrabold text-ink-900 tracking-[-0.02em]">
                 Where <span className="text-brand-500">small creators</span><br className="hidden sm:block" />
                 meet <span className="text-brand-500">real brands.</span>
               </h1>
 
-              <p className="mt-5 text-lg text-ink-600 leading-relaxed max-w-xl">
+              <p className="mt-4 sm:mt-5 text-base sm:text-lg text-ink-600 leading-relaxed max-w-xl">
                 Microwork connects micro-influencers with the brands that fit them best. Connect YouTube, show your real stats, run campaigns that actually convert.
               </p>
 
               {/* The signature Upwork search */}
-              <div className="anim-hero mt-8" style={{ animationDelay: '120ms' }}>
-                <div className="hero-tabs mb-3">
+              <div className="anim-hero mt-6 sm:mt-8" style={{ animationDelay: '120ms' }}>
+                <div className="hero-tabs mb-3 w-fit max-w-full overflow-x-auto no-scrollbar">
                   <button
                     onClick={() => setTab('talent')}
                     className={`hero-tab ${tab === 'talent' ? 'hero-tab-active' : ''}`}
@@ -78,7 +78,7 @@ export default function Landing() {
                   }}
                   className="hero-search"
                 >
-                  <Search className="w-5 h-5 text-ink-400 ml-5" />
+                  <Search className="w-5 h-5 text-ink-400 ml-4 sm:ml-5 shrink-0" />
                   <input
                     name="q"
                     placeholder={
@@ -88,12 +88,14 @@ export default function Landing() {
                     }
                   />
                   <button type="submit">
-                    Search <ArrowRight className="w-4 h-4" />
+                    <span className="hidden sm:inline">Search</span>
+                    <span className="sm:hidden"><ArrowRight className="w-4 h-4" /></span>
+                    <ArrowRight className="w-4 h-4 hidden sm:inline" />
                   </button>
                 </form>
 
                 <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-semibold text-ink-500 uppercase tracking-wide">
+                  <span className="text-xs font-semibold text-ink-500 uppercase tracking-wide mr-1">
                     {tab === 'talent' ? 'Popular talent' : 'Trending briefs'}
                   </span>
                   {(tab === 'talent' ? POPULAR_TALENT : POPULAR_CAMPAIGNS).map((s) => (
@@ -108,7 +110,7 @@ export default function Landing() {
                 </div>
               </div>
 
-              <div className="anim-hero mt-8 grid grid-cols-3 gap-6 max-w-lg" style={{ animationDelay: '200ms' }}>
+              <div className="anim-hero mt-6 sm:mt-8 grid grid-cols-3 gap-3 sm:gap-6 max-w-lg" style={{ animationDelay: '200ms' }}>
                 <Stat value="10k+" label="Sample creators" />
                 <Stat value="2.4k+" label="Sample brands" />
                 <Stat value="98%" label="Demo satisfaction" />
@@ -125,7 +127,7 @@ export default function Landing() {
       </section>
 
       {/* ===================== HOW IT WORKS ===================== */}
-      <section id="how" className="bg-section-mint py-20">
+      <section id="how" className="bg-section-mint py-12 sm:py-20">
         <div className="container-page">
           <div className="text-center max-w-2xl mx-auto">
             <div className="pill bg-brand-50 text-brand-700 mx-auto">How it works</div>
@@ -159,7 +161,7 @@ export default function Landing() {
       </section>
 
       {/* ===================== DUAL CTA ===================== */}
-      <section className="bg-white py-20">
+      <section className="bg-white py-12 sm:py-20">
         <div className="container-page">
           <div className="grid md:grid-cols-2 gap-5">
             <div id="creators">
@@ -195,7 +197,7 @@ export default function Landing() {
       </section>
 
       {/* ===================== TESTIMONIAL STRIP ===================== */}
-      <section className="bg-section-mint py-20">
+      <section className="bg-section-mint py-12 sm:py-20">
         <div className="container-page">
           <div className="text-center max-w-2xl mx-auto">
             <div className="pill bg-brand-50 text-brand-700 mx-auto">Loved by both sides</div>
@@ -225,7 +227,7 @@ export default function Landing() {
       </section>
 
       {/* ===================== FINAL CTA ===================== */}
-      <section className="bg-white py-20">
+      <section className="bg-white py-12 sm:py-20">
         <div className="container-page">
           <div className="relative overflow-hidden rounded-3xl bg-ink-900 text-white px-5 sm:px-8 lg:px-12 py-10 sm:py-14">
             <div className="absolute -top-24 -right-20 w-96 h-96 rounded-full bg-brand-500/30 blur-3xl" />
