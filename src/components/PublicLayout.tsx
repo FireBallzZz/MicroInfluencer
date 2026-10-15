@@ -1,7 +1,38 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { Sparkles, Menu, X } from 'lucide-react';
+import { Menu, X, ArrowUpRight } from 'lucide-react';
 import { useAuth } from '../state/AuthContext';
 import { useEffect, useState } from 'react';
+
+function Logo({ onClick, invert = false }: { onClick?: () => void; invert?: boolean }) {
+  return (
+    <Link
+      to="/"
+      onClick={onClick}
+      className="group inline-flex items-center gap-2.5"
+      aria-label="Microwork home"
+    >
+      <span
+        className={`relative inline-flex items-center justify-center w-7 h-7
+        ${invert ? 'bg-paper-50 text-ink-900' : 'bg-ink-900 text-paper-50'}
+        rounded-sm overflow-hidden`}
+      >
+        {/* Two-stroke M, evokes the brand initial without a generic sparkle. */}
+        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" aria-hidden>
+          <path
+            d="M3 19V5h2.5L12 14 18.5 5H21v14h-2.5V10.6L13 18h-2L5 10.6V19H3z"
+            fill="currentColor"
+          />
+        </svg>
+      </span>
+      <span
+        className={`font-display text-[19px] font-semibold leading-none tracking-[-0.02em]
+        ${invert ? 'text-paper-50' : 'text-ink-900'}`}
+      >
+        Microwork
+      </span>
+    </Link>
+  );
+}
 
 export default function PublicLayout() {
   const { user } = useAuth();
@@ -9,7 +40,6 @@ export default function PublicLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  // Sticky header glass effect after scroll
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
@@ -17,7 +47,6 @@ export default function PublicLayout() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Close mobile menu on resize to desktop
   useEffect(() => {
     const onResize = () => {
       if (window.innerWidth >= 768) setMenuOpen(false);
@@ -26,7 +55,6 @@ export default function PublicLayout() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // Esc + scroll lock while the mobile sheet is open
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMenuOpen(false);
@@ -43,43 +71,41 @@ export default function PublicLayout() {
 
   const closeMenu = () => setMenuOpen(false);
 
+  const dashboardLink = user
+    ? user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard'
+    : null;
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-paper-50 text-ink-700 flex flex-col">
       <header
-        className={`sticky top-0 z-30 transition-all duration-300
-          ${scrolled
-            ? 'glass border-b border-ink-200/70 shadow-card'
-            : 'border-b border-transparent bg-white'}
+        className={`sticky top-0 z-40 transition-all duration-300 ease-out-quint
+        ${scrolled
+          ? 'bg-paper-50/85 backdrop-blur-md border-b border-ink-200/80'
+          : 'bg-paper-50/0 border-b border-transparent'}
         `}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2" onClick={closeMenu}>
-            <div className="relative w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center shadow-[0_4px_12px_-2px_rgba(20,168,0,.5)]">
-              <Sparkles className="w-4 h-4 text-white" />
-              <span className="pointer-events-none absolute inset-0 rounded-lg ring-1 ring-white/30" />
-            </div>
-            <span className="font-bold text-ink-900 text-lg tracking-tight">Microwork</span>
-          </Link>
-          <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-ink-700">
+        <div className="container-page h-16 flex items-center justify-between">
+          <Logo onClick={closeMenu} />
+
+          <nav className="hidden md:flex items-center gap-8 text-sm text-ink-700">
             <a href="#how" className="hover:text-ink-900 transition-colors">How it works</a>
             <a href="#creators" className="hover:text-ink-900 transition-colors">For creators</a>
             <a href="#brands" className="hover:text-ink-900 transition-colors">For brands</a>
+            <a href="#market" className="hover:text-ink-900 transition-colors">Live market</a>
           </nav>
-          <div className="flex items-center gap-1 sm:gap-2">
+
+          <div className="flex items-center gap-1">
             {user ? (
               <Link
-                to={user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard'}
+                to={dashboardLink!}
                 className="btn btn-primary btn-sm sm:btn-md"
               >
-                <span className="hidden sm:inline">Open dashboard</span>
-                <span className="sm:hidden">Dashboard</span>
+                Dashboard
+                <ArrowUpRight className="w-3.5 h-3.5" />
               </Link>
             ) : (
               <>
-                <Link
-                  to="/login"
-                  className="btn btn-ghost btn-sm sm:btn-md hidden sm:inline-flex"
-                >
+                <Link to="/login" className="btn btn-ghost btn-sm sm:btn-md hidden sm:inline-flex">
                   Log in
                 </Link>
                 <button
@@ -87,77 +113,94 @@ export default function PublicLayout() {
                   className="btn btn-primary btn-sm sm:btn-md"
                 >
                   Get started
+                  <ArrowUpRight className="w-3.5 h-3.5 hidden sm:inline" />
                 </button>
               </>
             )}
             <button
               type="button"
-              className="md:hidden ml-1 inline-flex items-center justify-center w-10 h-10 rounded-full text-ink-700 hover:bg-ink-100"
               onClick={() => setMenuOpen((v) => !v)}
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
+              className="md:hidden ml-1 inline-flex items-center justify-center w-10 h-10
+                         text-ink-700 hover:bg-ink-100/60 rounded-sm"
             >
               {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
 
-        {/* Mobile slide-down menu */}
         <div
-          className={`md:hidden border-t border-ink-200 bg-white/95 backdrop-blur origin-top overflow-hidden transition-all duration-300
-            ${menuOpen ? 'opacity-100 max-h-96' : 'opacity-0 max-h-0 pointer-events-none'}`}
+          className={`md:hidden overflow-hidden border-t border-ink-200 bg-paper-50
+          transition-all duration-300 ease-out-quint
+          ${menuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
         >
-          <nav className="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-1 text-sm font-medium text-ink-700">
-            <a href="#how" onClick={closeMenu} className="py-2.5 hover:text-ink-900">How it works</a>
-            <a href="#creators" onClick={closeMenu} className="py-2.5 hover:text-ink-900">For creators</a>
-            <a href="#brands" onClick={closeMenu} className="py-2.5 hover:text-ink-900">For brands</a>
+          <nav className="container-page py-4 flex flex-col gap-1 text-sm text-ink-700">
+            <a href="#how" onClick={closeMenu} className="py-2.5">How it works</a>
+            <a href="#creators" onClick={closeMenu} className="py-2.5">For creators</a>
+            <a href="#brands" onClick={closeMenu} className="py-2.5">For brands</a>
+            <a href="#market" onClick={closeMenu} className="py-2.5">Live market</a>
             {!user && (
-              <Link to="/login" onClick={closeMenu} className="py-2.5 hover:text-ink-900">
-                Log in
-              </Link>
+              <Link to="/login" onClick={closeMenu} className="py-2.5">Log in</Link>
             )}
           </nav>
         </div>
       </header>
-      <Outlet />
-      <footer className="border-t border-ink-200 bg-ink-50 mt-12 sm:mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-14">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 text-sm">
-            <div className="lg:col-span-2">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-white" />
-                </div>
-                <span className="font-bold text-ink-900 text-lg tracking-tight">Microwork</span>
-              </div>
-              <p className="mt-3 text-ink-600 max-w-sm">
-                A demo marketplace for micro-influencers and brands. Built as part of an internship PRD.
+
+      <main className="flex-1">
+        <Outlet />
+      </main>
+
+      <footer className="bg-ink-900 text-ink-200 mt-16 sm:mt-24">
+        <div className="container-page py-14 sm:py-20">
+          <div className="grid lg:grid-cols-12 gap-10">
+            <div className="lg:col-span-5">
+              <Logo invert />
+              <p className="mt-5 text-ink-300 max-w-sm leading-relaxed">
+                A working demo marketplace for micro-influencers and the brands
+                that hire them. Built end-to-end as an internship PRD.
               </p>
+              <div className="mt-6 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-success animate-blink" />
+                <span className="text-xs font-mono uppercase tracking-[0.18em] text-ink-400">
+                  All systems normal
+                </span>
+              </div>
             </div>
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-ink-500">Product</h4>
-              <ul className="mt-3 space-y-2 text-ink-700">
-                <li><a href="#how" className="hover:text-ink-900">How it works</a></li>
-                <li><a href="#creators" className="hover:text-ink-900">For creators</a></li>
-                <li><a href="#brands" className="hover:text-ink-900">For brands</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-ink-500">Resources</h4>
-              <ul className="mt-3 space-y-2 text-ink-700">
-                <li>Trust &amp; safety</li>
-                <li>Help center</li>
-                <li>Terms</li>
-              </ul>
+
+            <div className="lg:col-span-7 grid sm:grid-cols-3 gap-8 text-sm">
+              <div>
+                <h4 className="eyebrow text-ink-400">Product</h4>
+                <ul className="mt-4 space-y-2.5">
+                  <li><a href="#how" className="hover:text-paper-50 transition-colors">How it works</a></li>
+                  <li><a href="#creators" className="hover:text-paper-50 transition-colors">For creators</a></li>
+                  <li><a href="#brands" className="hover:text-paper-50 transition-colors">For brands</a></li>
+                  <li><a href="#market" className="hover:text-paper-50 transition-colors">Live market</a></li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="eyebrow text-ink-400">Resources</h4>
+                <ul className="mt-4 space-y-2.5">
+                  <li className="hover:text-paper-50 transition-colors cursor-default">Trust &amp; safety</li>
+                  <li className="hover:text-paper-50 transition-colors cursor-default">Help center</li>
+                  <li className="hover:text-paper-50 transition-colors cursor-default">Terms</li>
+                  <li className="hover:text-paper-50 transition-colors cursor-default">Privacy</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="eyebrow text-ink-400">Demo</h4>
+                <ul className="mt-4 space-y-2.5">
+                  <li className="hover:text-paper-50 transition-colors cursor-default">Internship PRD</li>
+                  <li className="hover:text-paper-50 transition-colors cursor-default">Source on request</li>
+                  <li className="hover:text-paper-50 transition-colors cursor-default">v0.1.0 · 2026</li>
+                </ul>
+              </div>
             </div>
           </div>
-          <div className="mt-10 pt-6 border-t border-ink-200 text-xs text-ink-500 flex flex-col sm:flex-row justify-between gap-3">
-            <div>© Microwork demo · Built for the internship PRD</div>
-            <div className="flex flex-wrap gap-x-5 gap-y-2">
-              <span>Privacy</span>
-              <span>Cookies</span>
-              <span>Status</span>
-            </div>
+
+          <div className="mt-14 pt-6 border-t border-ink-700/70 flex flex-col sm:flex-row justify-between gap-3 text-xs text-ink-400">
+            <span>© 2026 Microwork demo. Built for the internship PRD.</span>
+            <span className="font-mono">made with restraint, not gradients</span>
           </div>
         </div>
       </footer>

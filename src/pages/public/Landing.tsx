@@ -1,649 +1,874 @@
 import { Link, useNavigate } from 'react-router-dom';
 import {
+  ArrowUpRight,
   Search,
-  Sparkles,
-  CheckCircle2,
   BadgeCheck,
-  ArrowRight,
   Briefcase,
   Users,
   Megaphone,
-  Star,
-  ShieldCheck,
-  Heart,
-  MessageCircle,
-  Play,
-  Zap,
   LineChart,
-  CheckCheck,
-  type LucideIcon,
+  Check,
+  Play,
+  Sparkles,
+  ArrowRight,
+  ChevronRight,
+  CircleDot,
+  TrendingUp,
+  XCircle,
 } from 'lucide-react';
 import { useAuth } from '../../state/AuthContext';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import CountUp from '../../components/CountUp';
 import { useReveal } from '../../hooks/useReveal';
 
-const POPULAR_TALENT = ['Lifestyle', 'Beauty', 'Fitness', 'Food', 'Tech', 'Travel'];
-const POPULAR_CAMPAIGNS = ['Product launch', 'Brand awareness', 'Recipe integration', 'Unboxing', 'How-to'];
+/* ─────────────────────── Data ─────────────────────── */
 
-const PARTNER_LOGOS = [
+const TALENT = ['Lifestyle', 'Beauty', 'Fitness', 'Food', 'Tech', 'Travel', 'Gaming', 'Finance'];
+const BRIEFS  = ['Product launch', 'Brand awareness', 'Recipe integration', 'Unboxing', 'How-to', 'Series deal'];
+
+const PARTNERS = [
   'Northwind', 'Hana Studio', 'Brewly', 'Lumen Labs', 'Drift',
   'Kindred', 'Atlas Outdoors', 'Field & Folk', 'Pebble', 'Northwood',
+  'Coriander', 'Vela Goods', 'Otto Coffee', 'Mara Skincare', 'Loomwell',
 ];
+
+/* Live, deterministic-looking activity feed for the "Live market" section. */
+const FEED = [
+  { tone: 'shortlist', who: 'Northwind Beverages', on: 'Avery Johnson', niche: 'Lifestyle', time: '2m' },
+  { tone: 'proposal',  who: 'Hana Studio',         on: 'Mia Park',       niche: 'Beauty',    time: '4m' },
+  { tone: 'accept',    who: 'Brewly Coffee',       on: 'Hassan Khan',    niche: 'Tech',      time: '6m' },
+  { tone: 'shortlist', who: 'Drift Apparel',       on: 'Eun-ji Park',    niche: 'Streetwear',time: '9m' },
+  { tone: 'proposal',  who: 'Kindred Snacks',      on: 'Liam Carter',    niche: 'Food',      time: '12m' },
+  { tone: 'accept',    who: 'Lumen Labs',          on: 'Priya Anand',    niche: 'Wellness',  time: '14m' },
+  { tone: 'reject',    who: 'Otto Coffee',         on: 'Devon Reyes',    niche: 'Lifestyle', time: '17m' },
+  { tone: 'shortlist', who: 'Vela Goods',          on: 'Noor Hassan',    niche: 'Home',      time: '21m' },
+];
+
+const TONE_STYLES: Record<string, { icon: JSX.Element; dot: string; text: string; label: string }> = {
+  shortlist: { icon: <CircleDot className="w-3 h-3" />, dot: 'bg-amber-500',  text: 'text-amber-700',  label: 'Shortlisted' },
+  proposal:  { icon: <TrendingUp className="w-3 h-3" />, dot: 'bg-ink-900',    text: 'text-ink-700',    label: 'New proposal' },
+  accept:    { icon: <Check className="w-3 h-3" />,      dot: 'bg-emerald-600',text: 'text-emerald-700',label: 'Accepted' },
+  reject:    { icon: <XCircle className="w-3 h-3" />,    dot: 'bg-ink-300',    text: 'text-ink-500',    label: 'Passed' },
+};
+
+/* ─────────────────────── Page ─────────────────────── */
 
 export default function Landing() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [tab, setTab] = useState<'talent' | 'jobs'>('talent');
+  const [query, setQuery] = useState('');
 
   const dashboardLink = user
-    ? user.role === 'creator'
-      ? '/creator/dashboard'
-      : '/brand/dashboard'
+    ? user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard'
     : null;
 
   return (
-    <div className="bg-white">
-      {/* ===================== HERO ===================== */}
-      <section className="relative bg-hero-mesh overflow-hidden">
-        <div className="absolute inset-0 bg-grid-soft opacity-70" />
-        {/* Animated mesh blobs */}
-        <div className="pointer-events-none absolute -top-32 -left-24 w-[520px] h-[520px] rounded-full bg-brand-300/30 blur-3xl animate-mesh-pan" />
-        <div className="pointer-events-none absolute -bottom-40 -right-24 w-[560px] h-[560px] rounded-full bg-accent-mint/35 blur-3xl animate-mesh-pan" style={{ animationDelay: '4s' }} />
-        <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[640px] h-[640px] rounded-full bg-accent-violet/15 blur-3xl animate-mesh-pan" style={{ animationDelay: '8s' }} />
+    <div className="bg-paper-50 text-ink-700">
+      <Hero
+        tab={tab}
+        setTab={setTab}
+        query={query}
+        setQuery={setQuery}
+        onSearch={() => {
+          if (tab === 'talent') navigate(`/login?next=/brand/creators&q=${encodeURIComponent(query)}`);
+          else navigate(`/login?next=/creator/campaigns&q=${encodeURIComponent(query)}`);
+        }}
+      />
 
-        <div className="container-page relative pt-10 pb-16 sm:pt-20 sm:pb-28">
-          <div className="grid lg:grid-cols-12 gap-10 items-center">
-            <div className="lg:col-span-7">
-              <Reveal>
-                <div className="inline-flex flex-wrap items-center gap-2 bg-white/80 backdrop-blur border border-ink-200/80 text-ink-700 text-xs font-semibold pl-1.5 pr-3 py-1 rounded-full shadow-card max-w-full">
-                  <span className="inline-flex items-center gap-1 bg-brand-500 text-white rounded-full px-2 py-0.5">
-                    <Sparkles className="w-3 h-3" /> New
-                  </span>
-                  <span className="whitespace-normal">A marketplace built for micro-influencers</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-ink-400 hidden sm:inline" />
-                </div>
-              </Reveal>
+      <TickerBar />
 
-              <Reveal delay={100}>
-                <h1 className="mt-5 sm:mt-6 text-4xl sm:text-5xl lg:text-[72px] leading-[1.02] font-extrabold text-ink-900 tracking-[-0.025em]">
-                  Where <span className="text-gradient-brand">small creators</span><br className="hidden sm:block" />
-                  meet <span className="text-gradient-brand">real brands.</span>
-                </h1>
-              </Reveal>
+      <Manifesto />
 
-              <Reveal delay={200}>
-                <p className="mt-4 sm:mt-5 text-base sm:text-lg text-ink-600 leading-relaxed max-w-xl">
-                  Microwork connects micro-influencers with the brands that fit them best. Connect YouTube, show your real stats, run campaigns that actually convert.
-                </p>
-              </Reveal>
+      <HowItWorks />
 
-              <Reveal delay={300}>
-                <div className="mt-6 sm:mt-8">
-                  <div className="hero-tabs mb-3 w-fit max-w-full overflow-x-auto no-scrollbar">
-                    <button
-                      onClick={() => setTab('talent')}
-                      className={`hero-tab ${tab === 'talent' ? 'hero-tab-active' : ''}`}
-                    >
-                      <Users className="w-4 h-4" /> Find creators
-                    </button>
-                    <button
-                      onClick={() => setTab('jobs')}
-                      className={`hero-tab ${tab === 'jobs' ? 'hero-tab-active' : ''}`}
-                    >
-                      <Briefcase className="w-4 h-4" /> Find jobs
-                    </button>
-                  </div>
+      <Roles />
 
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const input = (e.currentTarget.elements.namedItem('q') as HTMLInputElement).value;
-                      if (tab === 'talent') navigate(`/login?next=/brand/creators&q=${encodeURIComponent(input)}`);
-                      else navigate(`/login?next=/creator/campaigns&q=${encodeURIComponent(input)}`);
-                    }}
-                    className="hero-search"
-                  >
-                    <Search className="w-5 h-5 text-ink-400 ml-4 sm:ml-5 shrink-0" />
-                    <input
-                      name="q"
-                      placeholder={
-                        tab === 'talent'
-                          ? 'Search by niche, keyword or platform'
-                          : 'Search campaigns by title, brand or category'
-                      }
-                    />
-                    <button type="submit">
-                      <span className="hidden sm:inline">Search</span>
-                      <span className="sm:hidden"><ArrowRight className="w-4 h-4" /></span>
-                      <ArrowRight className="w-4 h-4 hidden sm:inline" />
-                    </button>
-                  </form>
+      <LiveMarket />
 
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold text-ink-500 uppercase tracking-wide mr-1">
-                      {tab === 'talent' ? 'Popular talent' : 'Trending briefs'}
-                    </span>
-                    {(tab === 'talent' ? POPULAR_TALENT : POPULAR_CAMPAIGNS).map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => navigate('/login')}
-                        className="pill bg-white border border-ink-200 text-ink-700 hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50 transition-colors"
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </Reveal>
+      <Process />
 
-              <Reveal delay={400}>
-                <div className="mt-6 sm:mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
-                  <Stat icon={Users} value={<><CountUp to={10} duration={1400} suffix="k+" /></>} label="Sample creators" />
-                  <Stat icon={Briefcase} value={<><CountUp to={2400} duration={1600} suffix="+" /></>} label="Sample brands" />
-                  <Stat icon={Star} value={<><CountUp to={98} duration={1600} suffix="%" /></>} label="Demo satisfaction" />
-                </div>
-              </Reveal>
-            </div>
+      <FinalCTA dashboardLink={dashboardLink} onStart={() => navigate('/register/role')} />
+    </div>
+  );
+}
 
-            <div className="hidden lg:block lg:col-span-5">
-              <HeroVisual />
-            </div>
+/* ════════════════════════════════════════════════════════
+   HERO — type-led, no decorative blobs or floating cards.
+   ════════════════════════════════════════════════════════ */
+
+function Hero({
+  tab, setTab, query, setQuery, onSearch,
+}: {
+  tab: 'talent' | 'jobs';
+  setTab: (t: 'talent' | 'jobs') => void;
+  query: string;
+  setQuery: (q: string) => void;
+  onSearch: () => void;
+}) {
+  const navigate = useNavigate();
+  return (
+    <section className="relative bg-paper-50 overflow-hidden">
+      <div className="absolute inset-0 bg-grid-faint pointer-events-none" aria-hidden />
+
+      <div className="container-page relative pt-10 sm:pt-16 pb-14 sm:pb-20">
+        {/* Top meta row */}
+        <div className="flex items-center justify-between text-xs text-ink-500">
+          <div className="eyebrow flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-ember-500" />
+            <span>Internship PRD · v0.1</span>
+          </div>
+          <div className="hidden sm:flex items-center gap-5">
+            <span className="font-mono text-ink-400">No. 002 — Marketplace</span>
+            <span className="font-mono text-ink-400">/ 2026</span>
           </div>
         </div>
 
-        <div className="h-12 sm:h-20 bg-gradient-to-b from-transparent to-white" />
-      </section>
+        <div className="mt-10 sm:mt-14 grid lg:grid-cols-12 gap-10 lg:gap-16 items-end">
+          {/* Headline */}
+          <div className="lg:col-span-8">
+            <Reveal>
+              <h1 className="display-xl">
+                A marketplace for
+                <span className="block">
+                  <span className="relative inline-block">
+                    <span className="relative z-10 italic font-medium">micro</span>
+                    <span
+                      aria-hidden
+                      className="absolute left-0 right-0 bottom-1 h-2.5 bg-ember-200/80 -z-0"
+                    />
+                  </span>
+                  <span>-influencers</span>
+                  <span className="text-ink-400"> &amp; </span>
+                  <br className="hidden sm:block" />
+                  the brands that hire them.
+                </span>
+              </h1>
+            </Reveal>
 
-      {/* ===================== LOGO STRIP ===================== */}
-      <section className="bg-white border-y border-ink-100">
-        <div className="container-page py-8 sm:py-10">
+            <Reveal delay={100}>
+              <p className="mt-6 sm:mt-8 text-base sm:text-lg text-ink-500 leading-relaxed max-w-xl">
+                Microwork is a working demo of a two-sided marketplace. Creators
+                connect YouTube for verified stats; brands post briefs with real
+                budgets; proposals move through a clean status flow. No bidding
+                wars, no DM archaeology.
+              </p>
+            </Reveal>
+
+            <Reveal delay={200}>
+              <div className="mt-7 sm:mt-9 flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => navigate('/register/role')}
+                  className="btn btn-primary btn-lg"
+                >
+                  Try the demo
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <a href="#how" className="btn btn-secondary btn-lg">
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  See how it works
+                </a>
+              </div>
+            </Reveal>
+          </div>
+
+          {/* Search — desktop right column */}
+          <div className="lg:col-span-4">
+            <Reveal delay={300}>
+              <div className="card p-5 sm:p-6">
+                <div className="flex items-center justify-between">
+                  <span className="eyebrow">Try a search</span>
+                  <span className="tag tag-outline">Live</span>
+                </div>
+
+                <div className="mt-4 flex border border-ink-200 rounded-sm overflow-hidden">
+                  <button
+                    onClick={() => setTab('talent')}
+                    className={`flex-1 h-10 text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-colors
+                      ${tab === 'talent' ? 'bg-ink-900 text-paper-50' : 'bg-paper-50 text-ink-700 hover:bg-paper-100'}`}
+                  >
+                    <Users className="w-3.5 h-3.5" /> Creators
+                  </button>
+                  <button
+                    onClick={() => setTab('jobs')}
+                    className={`flex-1 h-10 text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-colors
+                      ${tab === 'jobs' ? 'bg-ink-900 text-paper-50' : 'bg-paper-50 text-ink-700 hover:bg-paper-100'}`}
+                  >
+                    <Briefcase className="w-3.5 h-3.5" /> Briefs
+                  </button>
+                </div>
+
+                <form onSubmit={(e) => { e.preventDefault(); onSearch(); }} className="mt-3 flex items-center border border-ink-200 bg-paper-50 rounded-sm focus-within:border-ink-900 transition-colors">
+                  <Search className="w-4 h-4 text-ink-400 ml-3.5 shrink-0" />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={tab === 'talent' ? 'Try “beauty · 30K-80K”' : 'Try “unboxing · <$2k”'}
+                    className="flex-1 h-11 px-3 bg-transparent text-sm text-ink-900 placeholder:text-ink-400 outline-none"
+                  />
+                  <button
+                    type="submit"
+                    className="h-11 px-4 text-ink-900 hover:text-ember-600 text-[13px] font-semibold flex items-center gap-1 border-l border-ink-200"
+                    aria-label="Search"
+                  >
+                    Go <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </form>
+
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {(tab === 'talent' ? TALENT : BRIEFS).slice(0, 6).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => onSearch()}
+                      className="tag tag-paper hover:bg-ink-100 transition-colors"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+
+        {/* Stat band */}
+        <Reveal delay={300}>
+          <div className="mt-14 sm:mt-20 grid grid-cols-2 sm:grid-cols-4 gap-y-8 gap-x-6 border-t border-ink-200 pt-8">
+            <Stat n={<CountUp to={10420} duration={1400} />} label="Creators on platform" />
+            <Stat n={<><CountUp to={2418} duration={1400} suffix="+" /></>} label="Brands running briefs" />
+            <Stat n={<><CountUp to={3.2} duration={1400} decimals={1} suffix="x" /></>} label="Median ROI on hires" />
+            <Stat n={<><CountUp to={94} duration={1400} suffix="%" /></>} label="Briefs filled in 7d" />
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+function Stat({ n, label }: { n: React.ReactNode; label: string }) {
+  return (
+    <div>
+      <div className="font-display text-[clamp(1.75rem,3.4vw,2.6rem)] font-semibold leading-none text-ink-900 tracking-[-0.025em]">
+        {n}
+      </div>
+      <div className="mt-2 text-[12px] font-medium text-ink-500 leading-snug max-w-[18ch]">
+        {label}
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   TICKER — partner strip as a slow, deliberate marquee.
+   ════════════════════════════════════════════════════════ */
+
+function TickerBar() {
+  return (
+    <section className="border-y border-ink-200 bg-paper-100/50 py-6 overflow-hidden">
+      <div className="container-page mb-3 flex items-center justify-between text-ink-500">
+        <span className="eyebrow">Trusted by teams at</span>
+        <span className="hidden sm:block eyebrow text-ink-400">2,400+ demo brands</span>
+      </div>
+      <div className="marquee-mask overflow-hidden">
+        <div className="marquee-track gap-12 pr-12">
+          {[...PARTNERS, ...PARTNERS].map((name, i) => (
+            <div
+              key={`${name}-${i}`}
+              className="flex items-center gap-2.5 text-ink-500 hover:text-ink-900 transition-colors shrink-0"
+            >
+              <span className="font-mono text-[11px] text-ink-400">0{(i % PARTNERS.length) + 1}</span>
+              <span className="font-display text-[20px] font-medium tracking-[-0.01em] whitespace-nowrap">
+                {name}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   MANIFESTO — single editorial line + a 3-line grid.
+   ════════════════════════════════════════════════════════ */
+
+function Manifesto() {
+  return (
+    <section className="container-page py-20 sm:py-28">
+      <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
+        <div className="lg:col-span-4">
           <Reveal>
-            <p className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-ink-500">
-              Trusted by 2,400+ demo brands and 10k+ creators
+            <span className="eyebrow">/ 01 — The problem</span>
+            <h2 className="display-md mt-4">
+              Influencer marketing<br />
+              stopped making sense.
+            </h2>
+          </Reveal>
+        </div>
+        <div className="lg:col-span-7 lg:col-start-6">
+          <Reveal delay={100}>
+            <p className="text-ink-700 text-lg sm:text-xl leading-relaxed">
+              Big platforms reward big creators. Brands pay inflated rates for
+              audiences they can&apos;t verify. Smaller creators — the ones with
+              real, loyal followings — get buried in DMs.
+            </p>
+            <p className="mt-4 text-ink-500 text-base sm:text-lg leading-relaxed">
+              Microwork is a working prototype that flips the model: verified
+              stats, transparent briefs, a single status flow for both sides.
             </p>
           </Reveal>
-          <div className="mt-6 marquee-mask overflow-hidden">
-            <div className="marquee-track gap-12 pr-12">
-              {[...PARTNER_LOGOS, ...PARTNER_LOGOS].map((name, i) => (
-                <div
-                  key={`${name}-${i}`}
-                  className="flex items-center gap-2 text-ink-400 hover:text-ink-700 transition-colors shrink-0"
-                >
-                  <div className="w-7 h-7 rounded-md bg-ink-100 flex items-center justify-center text-[11px] font-bold text-ink-500">
-                    {name[0]}
+
+          <Reveal delay={200}>
+            <ul className="mt-10 grid sm:grid-cols-2 gap-x-10 gap-y-5 text-sm">
+              {[
+                ['Verified YouTube stats', 'No inflated follower counts. Engagement and views come straight from the API.'],
+                ['Briefs with budgets',    'Every campaign lists deliverables, deadline and per-creator rate up front.'],
+                ['One status flow',        'Shortlist, accept, reject — visible to both sides at all times.'],
+                ['No DM archaeology',      'Proposals, comments and files all live next to the brief.'],
+              ].map(([title, body]) => (
+                <li key={title} className="flex gap-3">
+                  <span className="mt-1.5 inline-block w-1.5 h-1.5 rounded-full bg-ember-500 shrink-0" />
+                  <div>
+                    <div className="font-semibold text-ink-900">{title}</div>
+                    <div className="mt-1 text-ink-500 leading-relaxed">{body}</div>
                   </div>
-                  <span className="text-base font-semibold tracking-tight whitespace-nowrap">{name}</span>
-                </div>
+                </li>
               ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===================== HOW IT WORKS ===================== */}
-      <section id="how" className="bg-section-mint py-16 sm:py-24">
-        <div className="container-page">
-          <Reveal>
-            <div className="text-center max-w-2xl mx-auto">
-              <div className="pill bg-brand-50 text-brand-700 mx-auto border border-brand-200/60">
-                <Zap className="w-3.5 h-3.5" /> How it works
-              </div>
-              <h2 className="mt-4 text-3xl sm:text-5xl font-extrabold tracking-[-0.02em]">A simple way to work together</h2>
-              <p className="mt-3 text-ink-600 text-base sm:text-lg">
-                No bidding wars, no DM chaos. Just real briefs, real proposals and clear status updates.
-              </p>
-            </div>
-          </Reveal>
-
-          <div className="relative mt-14">
-            {/* Connector line (desktop only) */}
-            <div className="hidden md:block absolute top-7 left-[14%] right-[14%] h-px bg-gradient-to-r from-transparent via-ink-200 to-transparent" />
-            <div className="grid md:grid-cols-3 gap-5 sm:gap-6">
-              <Reveal delay={100}>
-                <HowCard
-                  step="01"
-                  icon={ShieldCheck}
-                  title="Verified stats"
-                  body="Creators connect YouTube for verified follower counts and engagement rates. No more guessing."
-                />
-              </Reveal>
-              <Reveal delay={200}>
-                <HowCard
-                  step="02"
-                  icon={Megaphone}
-                  title="Campaigns that fit"
-                  body="Brands post briefs with deliverables, budget and deadlines — creators apply with one tap."
-                />
-              </Reveal>
-              <Reveal delay={300}>
-                <HowCard
-                  step="03"
-                  icon={LineChart}
-                  title="Track everything"
-                  body="Both sides see real-time proposal status. No more wondering where things stand."
-                />
-              </Reveal>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===================== FEATURE GRID ===================== */}
-      <section className="bg-white py-16 sm:py-24">
-        <div className="container-page">
-          <div className="grid lg:grid-cols-12 gap-10 items-center">
-            <Reveal className="lg:col-span-5">
-              <div className="pill bg-brand-50 text-brand-700 border border-brand-200/60">
-                <Sparkles className="w-3.5 h-3.5" /> Built for both sides
-              </div>
-              <h2 className="mt-4 text-3xl sm:text-5xl font-extrabold tracking-[-0.02em] leading-[1.05]">
-                One platform.<br />
-                <span className="text-gradient-brand">Two great experiences.</span>
-              </h2>
-              <p className="mt-4 text-ink-600 text-base sm:text-lg max-w-md">
-                Whether you’re a creator with 5k followers or a brand launching your next big campaign, Microwork gives you the tools to make it work.
-              </p>
-              <ul className="mt-6 space-y-2.5 text-sm text-ink-700 max-w-md">
-                {[
-                  'Verified YouTube stats — no inflated numbers',
-                  'Real briefs with budgets, deliverables and deadlines',
-                  'Live proposal status for creators and brands',
-                  'Mobile-first design that feels right on any device',
-                ].map((b) => (
-                  <li key={b} className="flex items-start gap-2.5">
-                    <span className="mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-50 text-brand-600 ring-1 ring-brand-200/60">
-                      <CheckCheck className="w-3.5 h-3.5" />
-                    </span>
-                    {b}
-                  </li>
-                ))}
-              </ul>
-            </Reveal>
-
-            <div className="lg:col-span-7 grid sm:grid-cols-2 gap-4">
-              <Reveal delay={100}>
-                <FeatureCard
-                  tone="mint"
-                  icon={BadgeCheck}
-                  title="Verified YouTube"
-                  body="OAuth connect pulls real follower counts, view metrics and engagement rate."
-                />
-              </Reveal>
-              <Reveal delay={200}>
-                <FeatureCard
-                  tone="violet"
-                  icon={Megaphone}
-                  title="Smart matching"
-                  body="Brands see creators whose niche, audience size and platform match the brief."
-                />
-              </Reveal>
-              <Reveal delay={300}>
-                <FeatureCard
-                  tone="amber"
-                  icon={LineChart}
-                  title="Live status"
-                  body="Pending, shortlisted, accepted, rejected — clear at a glance, no inbox archaeology."
-                />
-              </Reveal>
-              <Reveal delay={400}>
-                <FeatureCard
-                  tone="coral"
-                  icon={ShieldCheck}
-                  title="Trust &amp; safety"
-                  body="Both sides see real profiles. Demo simulates escrow and dispute handling for hires."
-                />
-              </Reveal>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===================== DUAL CTA ===================== */}
-      <section className="bg-white pb-16 sm:pb-24">
-        <div className="container-page">
-          <div className="grid md:grid-cols-2 gap-5">
-            <Reveal>
-              <div id="creators">
-                <RoleCTA
-                  tone="creator"
-                  tag="For creators"
-                  title="Build a profile brands actually want to work with."
-                  body="Stand out with verified stats, a clean portfolio and one-tap proposals."
-                  bullets={[
-                    'Verified YouTube connection',
-                    'Up to 3 portfolio links',
-                    'Apply to relevant campaigns',
-                    'Track every proposal in one place',
-                  ]}
-                  cta="Sign up as creator"
-                  onClick={() => navigate('/register/creator')}
-                />
-              </div>
-            </Reveal>
-            <Reveal delay={100}>
-              <div id="brands">
-                <RoleCTA
-                  tone="brand"
-                  tag="For brands"
-                  title="Find the right creators and run real campaigns."
-                  body="Discover vetted creators, post briefs in minutes and manage proposals in one place."
-                  bullets={[
-                    'Search 1,000s of vetted creators',
-                    'Filter by niche, platform, followers',
-                    'Post a campaign in minutes',
-                    'Shortlist, accept and reject proposals',
-                  ]}
-                  cta="Sign up as brand"
-                  onClick={() => navigate('/register/brand')}
-                />
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
-      {/* ===================== TESTIMONIAL STRIP ===================== */}
-      <section className="bg-section-mint py-16 sm:py-24">
-        <div className="container-page">
-          <Reveal>
-            <div className="text-center max-w-2xl mx-auto">
-              <div className="pill bg-brand-50 text-brand-700 mx-auto border border-brand-200/60">
-                <Heart className="w-3.5 h-3.5" /> Loved by both sides
-              </div>
-              <h2 className="mt-4 text-3xl sm:text-5xl font-extrabold tracking-[-0.02em]">A marketplace that actually works.</h2>
-              <div className="mt-5 flex items-center justify-center gap-1.5 text-amber-500">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-current" />
-                ))}
-                <span className="ml-2 text-sm font-semibold text-ink-700">4.9 from demo participants</span>
-              </div>
-            </div>
-          </Reveal>
-
-          <div className="mt-12 grid md:grid-cols-3 gap-5">
-            <Reveal delay={100}>
-              <Testimonial
-                initials="JL"
-                tone="violet"
-                quote="We found 3 creators for our launch in two days. The verified YouTube data saved us hours."
-                author="Jamie Lee"
-                role="Marketing lead"
-                org="Northwind Beverages"
-                side="brand"
-              />
-            </Reveal>
-            <Reveal delay={200}>
-              <Testimonial
-                initials="AJ"
-                tone="mint"
-                quote="My acceptance rate doubled once I connected YouTube. Brands trust me more when my stats are real."
-                author="Avery Johnson"
-                role="Lifestyle creator"
-                org="38.4K subscribers"
-                side="creator"
-              />
-            </Reveal>
-            <Reveal delay={300}>
-              <Testimonial
-                initials="MS"
-                tone="amber"
-                quote="The proposal flow is clean. No back-and-forth emails, no guessing. Just clear status."
-                author="Morgan Singh"
-                role="Founder"
-                org="Hana Studio"
-                side="brand"
-              />
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
-      {/* ===================== FINAL CTA ===================== */}
-      <section className="bg-white py-16 sm:py-24">
-        <div className="container-page">
-          <Reveal>
-            <div className="relative overflow-hidden rounded-3xl bg-ink-900 text-white px-5 sm:px-8 lg:px-12 py-10 sm:py-16">
-              {/* Glow layers */}
-              <div className="absolute -top-24 -right-20 w-[420px] h-[420px] rounded-full bg-brand-500/35 blur-3xl" />
-              <div className="absolute -bottom-32 -left-20 w-[440px] h-[440px] rounded-full bg-accent-violet/30 blur-3xl" />
-              <div className="absolute inset-0 bg-noise opacity-60 mix-blend-overlay" />
-              <div className="absolute inset-0 bg-grid-soft opacity-30" />
-
-              <div className="relative grid lg:grid-cols-3 gap-8 items-center">
-                <div className="lg:col-span-2">
-                  <div className="inline-flex items-center gap-2 bg-white/10 border border-white/15 text-white text-xs font-semibold pl-1.5 pr-3 py-1 rounded-full">
-                    <span className="inline-flex items-center gap-1 bg-brand-500 text-white rounded-full px-2 py-0.5">
-                      <Sparkles className="w-3 h-3" /> Free
-                    </span>
-                    60 seconds to get started
-                  </div>
-                  <h2 className="mt-4 text-3xl sm:text-5xl font-extrabold leading-[1.05] text-white tracking-[-0.02em]">
-                    Ready to try the <span className="text-gradient-light">marketplace?</span>
-                  </h2>
-                  <p className="mt-3 text-ink-300 max-w-xl text-base sm:text-lg">
-                    Free to join, takes 60 seconds. Pick a role and explore a fully working demo.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-3">
-                  {dashboardLink ? (
-                    <Link to={dashboardLink} className="btn btn-primary btn-lg w-full">
-                      Open my dashboard <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  ) : (
-                    <button onClick={() => navigate('/register/role')} className="btn btn-primary btn-lg w-full">
-                      Get started — it’s free <ArrowRight className="w-4 h-4" />
-                    </button>
-                  )}
-                  <Link
-                    to="/login"
-                    className="btn btn-lg w-full !text-white !bg-transparent !border-white/30 hover:!bg-white/10"
-                  >
-                    I already have an account
-                  </Link>
-                </div>
-              </div>
-            </div>
+            </ul>
           </Reveal>
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
   );
 }
 
-/* ============== helpers ============== */
+/* ════════════════════════════════════════════════════════
+   HOW IT WORKS — three editorial step cards.
+   ════════════════════════════════════════════════════════ */
 
-function Stat({ icon: Icon, value, label }: { icon: typeof Users; value: React.ReactNode; label: string }) {
+function HowItWorks() {
   return (
-    <div className="flex items-center gap-3">
-      <div className="w-9 h-9 rounded-full bg-white/80 backdrop-blur border border-ink-200 text-brand-600 flex items-center justify-center shadow-card">
-        <Icon className="w-4 h-4" />
+    <section id="how" className="bg-ink-900 text-ink-200 py-20 sm:py-28 relative overflow-hidden">
+      {/* Very subtle grid */}
+      <div
+        className="absolute inset-0 opacity-[0.06] pointer-events-none"
+        style={{
+          backgroundImage:
+            'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)',
+          backgroundSize: '64px 64px',
+        }}
+        aria-hidden
+      />
+
+      <div className="container-page relative">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 border-b border-ink-700/70 pb-8">
+          <Reveal>
+            <span className="eyebrow text-ink-400">/ 02 — How it works</span>
+            <h2 className="display-lg mt-3 text-paper-50 max-w-xl">
+              Three steps. <span className="text-ink-400">Both sides.</span>
+            </h2>
+          </Reveal>
+          <Reveal delay={100}>
+            <p className="text-ink-300 max-w-sm text-base sm:text-lg">
+              The whole flow takes about 60 seconds to grasp. We&apos;ll walk
+              it through both sides of the marketplace.
+            </p>
+          </Reveal>
+        </div>
+
+        <div className="mt-12 grid md:grid-cols-3 gap-px bg-ink-700/70 border border-ink-700/70">
+          <Reveal delay={100}>
+            <Step
+              n="01"
+              side="Creator"
+              icon={<BadgeCheck className="w-4 h-4" />}
+              title="Connect &amp; get verified."
+              body="OAuth your YouTube channel. We pull your real subscriber count, view rate and engagement. No screenshots, no claims."
+              meta="~ 30 seconds"
+            />
+          </Reveal>
+          <Reveal delay={200}>
+            <Step
+              n="02"
+              side="Brand"
+              icon={<Megaphone className="w-4 h-4" />}
+              title="Post a brief with a budget."
+              body="Set deliverables, deadline and per-creator rate. The brief goes live to matched creators within minutes."
+              meta="~ 5 minutes"
+            />
+          </Reveal>
+          <Reveal delay={300}>
+            <Step
+              n="03"
+              side="Both"
+              icon={<LineChart className="w-4 h-4" />}
+              title="Move proposals through a clean status."
+              body="Shortlist, accept, reject — visible to both sides. No inbox archaeology, no &ldquo;just checking in&rdquo; emails."
+              meta="Ongoing"
+            />
+          </Reveal>
+        </div>
       </div>
-      <div>
-        <div className="text-xl sm:text-2xl font-extrabold text-ink-900 leading-none">{value}</div>
-        <div className="text-xs text-ink-500 mt-1">{label}</div>
-      </div>
-    </div>
+    </section>
   );
 }
 
-function HowCard({
-  step,
-  icon: Icon,
-  title,
-  body,
+function Step({
+  n, side, icon, title, body, meta,
 }: {
-  step: string;
-  icon: LucideIcon;
-  title: string;
-  body: string;
+  n: string; side: string;
+  icon: JSX.Element; title: React.ReactNode; body: string; meta: string;
 }) {
   return (
-    <div className="relative card card-hover p-6 sm:p-7 h-full group">
-      {/* step number badge */}
-      <div className="absolute -top-3 left-6 inline-flex items-center gap-1.5 bg-white border border-ink-200 text-ink-700 text-[11px] font-bold uppercase tracking-wider rounded-full px-2.5 py-1 shadow-card">
-        Step <span className="text-ink-900">{step}</span>
-      </div>
-      <div className="mt-2 w-12 h-12 rounded-xl bg-gradient-to-br from-brand-50 to-brand-100 text-brand-600 flex items-center justify-center ring-1 ring-brand-200/60 group-hover:scale-110 transition-transform duration-300 ease-out-expo">
-        <Icon className="w-6 h-6" />
-      </div>
-      <h3 className="mt-5 text-lg font-bold text-ink-900">{title}</h3>
-      <p className="mt-2 text-sm text-ink-600 leading-relaxed">{body}</p>
-    </div>
-  );
-}
-
-function FeatureCard({
-  tone,
-  icon: Icon,
-  title,
-  body,
-}: {
-  tone: 'mint' | 'violet' | 'amber' | 'coral';
-  icon: LucideIcon;
-  title: string;
-  body: string;
-}) {
-  const tones: Record<string, { bg: string; text: string; ring: string }> = {
-    mint:   { bg: 'bg-brand-50',     text: 'text-brand-700',  ring: 'ring-brand-200/60' },
-    violet: { bg: 'bg-violet-50',    text: 'text-accent-violet', ring: 'ring-violet-200/60' },
-    amber:  { bg: 'bg-amber-50',     text: 'text-amber-700',  ring: 'ring-amber-200/60' },
-    coral:  { bg: 'bg-rose-50',      text: 'text-rose-700',   ring: 'ring-rose-200/60' },
-  };
-  const t = tones[tone];
-  return (
-    <div className="card card-hover p-5 h-full">
-      <div className={`w-10 h-10 rounded-lg ${t.bg} ${t.text} flex items-center justify-center ring-1 ${t.ring}`}>
-        <Icon className="w-5 h-5" />
-      </div>
-      <h3 className="mt-4 text-base font-bold text-ink-900">{title}</h3>
-      <p className="mt-1.5 text-sm text-ink-600 leading-relaxed">{body}</p>
-    </div>
-  );
-}
-
-function RoleCTA({
-  tone,
-  tag,
-  title,
-  body,
-  bullets,
-  cta,
-  onClick,
-}: {
-  tone: 'creator' | 'brand';
-  tag: string;
-  title: string;
-  body: string;
-  bullets: string[];
-  cta: string;
-  onClick: () => void;
-}) {
-  const creatorTone = tone === 'creator';
-  return (
-    <div
-      className={`relative overflow-hidden rounded-3xl p-7 sm:p-9 h-full flex flex-col group
-        ${creatorTone
-          ? 'bg-gradient-to-br from-brand-50 via-white to-white border border-brand-200/60'
-          : 'bg-gradient-to-br from-violet-50 via-white to-white border border-violet-200/60'}
-      `}
-    >
-      {/* Decorative blob */}
-      <div className={`pointer-events-none absolute -top-20 -right-20 w-72 h-72 rounded-full blur-3xl opacity-50 ${creatorTone ? 'bg-brand-300/40' : 'bg-accent-violet/30'}`} />
-
-      <div className="relative flex items-center gap-2">
-        <span className={`pill ${creatorTone ? 'bg-white text-brand-700 border border-brand-200/60' : 'bg-white text-accent-violet border border-violet-200/60'}`}>
-          {tag}
+    <article className="bg-ink-900 p-7 sm:p-9 h-full flex flex-col">
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-[11px] tracking-[0.2em] text-ink-400">STEP {n}</span>
+        <span className="tag tag-outline !text-ink-300 !border-ink-600 flex items-center gap-1.5">
+          {icon} {side}
         </span>
       </div>
-      <h3 className="relative mt-4 text-2xl sm:text-3xl font-extrabold leading-tight text-ink-900 tracking-[-0.02em]">
+      <h3 className="mt-10 font-display text-2xl sm:text-3xl text-paper-50 leading-[1.1] tracking-[-0.02em]"
+          dangerouslySetInnerHTML={{ __html: title as string }} />
+      <p className="mt-4 text-ink-300 leading-relaxed text-[15px]"
+         dangerouslySetInnerHTML={{ __html: body }} />
+      <div className="mt-auto pt-8 flex items-center gap-2 text-xs text-ink-400">
+        <span className="w-1.5 h-1.5 rounded-full bg-ember-400" />
+        <span className="font-mono uppercase tracking-[0.14em]">{meta}</span>
+      </div>
+    </article>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   ROLES — two stacked editorial cards (creator / brand).
+   ════════════════════════════════════════════════════════ */
+
+function Roles() {
+  const navigate = useNavigate();
+  return (
+    <section className="container-page py-20 sm:py-28">
+      <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-end mb-12 sm:mb-16">
+        <div className="lg:col-span-7">
+          <Reveal>
+            <span className="eyebrow">/ 03 — Pick a side</span>
+            <h2 className="display-lg mt-3">
+              Two roles, <span className="text-ink-400">one</span> clean flow.
+            </h2>
+          </Reveal>
+        </div>
+        <Reveal delay={100} className="lg:col-span-5">
+          <p className="text-ink-500 text-lg leading-relaxed">
+            The demo ships with both sides fully wired. Sign up as a creator or
+            a brand and you can move through a complete proposal loop in a few
+            minutes.
+          </p>
+        </Reveal>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-5">
+        <Reveal>
+          <RoleCard
+            id="creators"
+            tone="creator"
+            tag="For creators"
+            title="Build a profile brands actually want to work with."
+            body="Stand out with verified stats, a clean portfolio and one-tap proposals."
+            points={[
+              'Verified YouTube connection',
+              'Up to 3 portfolio links',
+              'Apply to relevant campaigns',
+              'Track every proposal in one place',
+            ]}
+            cta="Sign up as creator"
+            onClick={() => navigate('/register/creator')}
+          />
+        </Reveal>
+        <Reveal delay={100}>
+          <RoleCard
+            id="brands"
+            tone="brand"
+            tag="For brands"
+            title="Find the right creators and run real campaigns."
+            body="Discover vetted creators, post briefs in minutes and manage proposals in one place."
+            points={[
+              'Search 1,000s of vetted creators',
+              'Filter by niche, platform, followers',
+              'Post a campaign in minutes',
+              'Shortlist, accept and reject proposals',
+            ]}
+            cta="Sign up as brand"
+            onClick={() => navigate('/register/brand')}
+          />
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+function RoleCard({
+  id, tone, tag, title, body, points, cta, onClick,
+}: {
+  id: string;
+  tone: 'creator' | 'brand';
+  tag: string; title: string; body: string;
+  points: string[]; cta: string; onClick: () => void;
+}) {
+  const isCreator = tone === 'creator';
+  return (
+    <article
+      id={id}
+      className={`relative overflow-hidden rounded-[20px] border p-7 sm:p-10
+        ${isCreator
+          ? 'bg-ink-900 text-paper-50 border-ink-900'
+          : 'bg-paper-50 text-ink-900 border-ink-200'}`}
+    >
+      {/* Tiny corner mark */}
+      <div
+        className={`absolute top-0 right-0 w-32 h-32 -mr-12 -mt-12 rounded-full
+        ${isCreator ? 'bg-ember-500/15' : 'bg-ember-500/10'}`}
+        aria-hidden
+      />
+
+      <div className="relative flex items-center justify-between">
+        <span className={`eyebrow ${isCreator ? 'text-ink-400' : 'text-ink-500'}`}>
+          {tag}
+        </span>
+        <ArrowUpRight
+          className={`w-4 h-4 ${isCreator ? 'text-ink-400' : 'text-ink-500'}`}
+        />
+      </div>
+
+      <h3
+        className={`relative mt-6 font-display tracking-[-0.02em] leading-[1.05]
+        text-[clamp(1.5rem,2.6vw,2rem)]
+        ${isCreator ? 'text-paper-50' : 'text-ink-900'}`}
+      >
         {title}
       </h3>
-      <p className="relative mt-3 text-sm sm:text-base text-ink-600">{body}</p>
+      <p className={`relative mt-3 text-[15px] leading-relaxed max-w-md ${isCreator ? 'text-ink-300' : 'text-ink-500'}`}>
+        {body}
+      </p>
 
-      <ul className="relative mt-5 space-y-2.5 text-sm text-ink-700 flex-1">
-        {bullets.map((b) => (
-          <li key={b} className="flex items-start gap-2.5">
-            <span className={`mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full
-              ${creatorTone ? 'bg-brand-500 text-white' : 'bg-accent-violet text-white'}`}>
-              <CheckCircle2 className="w-3.5 h-3.5" />
+      <ul className="relative mt-7 grid sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+        {points.map((p) => (
+          <li key={p} className="flex items-start gap-2.5">
+            <span
+              className={`mt-0.5 inline-flex items-center justify-center w-4 h-4 shrink-0
+              ${isCreator
+                ? 'bg-ember-500 text-paper-50'
+                : 'bg-ink-900 text-paper-50'}`}
+              style={{ borderRadius: 3 }}
+            >
+              <Check className="w-3 h-3" />
             </span>
-            {b}
+            <span className={isCreator ? 'text-paper-200' : 'text-ink-700'}>
+              {p}
+            </span>
           </li>
         ))}
       </ul>
 
-      <button
-        onClick={onClick}
-        className={`btn btn-md mt-7 w-full group/cta
-          ${creatorTone
-            ? 'bg-brand-500 text-white hover:bg-brand-600 shadow-[0_2px_4px_rgba(20,168,0,.18)] hover:shadow-[0_6px_16px_rgba(20,168,0,.28)]'
-            : 'bg-ink-900 text-white hover:bg-ink-800 shadow-[0_2px_4px_rgba(20,22,24,.18)] hover:shadow-[0_6px_16px_rgba(20,22,24,.28)]'}
-        `}
-      >
-        {cta}
-        <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover/cta:translate-x-0.5" />
-      </button>
+      <div className="relative mt-9">
+        <button
+          onClick={onClick}
+          className={`btn btn-md
+            ${isCreator
+              ? 'bg-paper-50 text-ink-900 hover:bg-paper-100'
+              : 'btn-primary'}`}
+        >
+          {cta}
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+    </article>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   LIVE MARKET — activity ticker + a sample brief card.
+   ════════════════════════════════════════════════════════ */
+
+function LiveMarket() {
+  const [feedIndex, setFeedIndex] = useState(0);
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setFeedIndex((i) => (i + 1) % FEED.length);
+    }, 3200);
+    return () => window.clearInterval(id);
+  }, []);
+
+  // Show three items rotating through the feed
+  const visible = [0, 1, 2].map((o) => FEED[(feedIndex + o) % FEED.length]);
+
+  return (
+    <section id="market" className="bg-paper-100/60 border-y border-ink-200 py-20 sm:py-28">
+      <div className="container-page">
+        <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
+          <div className="lg:col-span-5">
+            <Reveal>
+              <span className="eyebrow">/ 04 — Live market</span>
+              <h2 className="display-lg mt-3">
+                Proposals, <span className="text-ink-400">moving.</span>
+              </h2>
+              <p className="mt-5 text-ink-500 text-lg max-w-md leading-relaxed">
+                A taste of what activity looks like inside the platform. Every
+                row is a real status change — shortlist, new proposal, accept,
+                pass — flowing through the marketplace right now.
+              </p>
+
+              <div className="mt-8 flex items-center gap-3">
+                <span className="w-2 h-2 rounded-full bg-emerald-600 animate-blink" />
+                <span className="eyebrow text-ink-700">Streaming demo data</span>
+              </div>
+            </Reveal>
+          </div>
+
+          <div className="lg:col-span-7">
+            <Reveal delay={100}>
+              <div className="card overflow-hidden">
+                <div className="flex items-center justify-between px-5 sm:px-6 py-3 border-b border-ink-200">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-blink" />
+                    <span className="text-[13px] font-semibold text-ink-900">Activity</span>
+                    <span className="text-ink-400 text-xs">·</span>
+                    <span className="font-mono text-[11px] text-ink-500">last 30m</span>
+                  </div>
+                  <span className="font-mono text-[11px] text-ink-500 hidden sm:inline">
+                    auto-refresh 3s
+                  </span>
+                </div>
+
+                <ul className="divide-y divide-ink-200">
+                  {visible.map((row, idx) => {
+                    const t = TONE_STYLES[row.tone];
+                    return (
+                      <li
+                        key={`${feedIndex}-${idx}-${row.who}`}
+                        className="grid grid-cols-12 items-center gap-3 px-5 sm:px-6 py-4 animate-fade-in"
+                      >
+                        <div className="col-span-1 flex justify-center">
+                          <span className={`w-2 h-2 rounded-full ${t.dot}`} />
+                        </div>
+                        <div className="col-span-7 sm:col-span-7 min-w-0">
+                          <div className="text-sm text-ink-900 truncate">
+                            <span className={`font-semibold ${t.text}`}>{t.label}</span>
+                            <span className="text-ink-500"> · {row.who} → </span>
+                            <span className="font-semibold">{row.on}</span>
+                          </div>
+                          <div className="text-xs text-ink-500 truncate mt-0.5">
+                            {row.niche} · YouTube
+                          </div>
+                        </div>
+                        <div className="col-span-4 sm:col-span-4 text-right">
+                          <span className="font-mono text-[11px] text-ink-500 uppercase tracking-[0.1em]">
+                            {row.time} ago
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                <div className="px-5 sm:px-6 py-3 border-t border-ink-200 bg-paper-50 flex items-center justify-between">
+                  <span className="text-[12px] text-ink-500">
+                    Showing 3 of <span className="font-mono text-ink-900">128</span> events
+                  </span>
+                  <a href="#" className="text-[12px] font-semibold text-ink-900 hover:text-ember-600 inline-flex items-center gap-1">
+                    Open full feed <ChevronRight className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+            </Reveal>
+
+            <Reveal delay={200}>
+              <div className="mt-5 grid sm:grid-cols-3 gap-px border border-ink-200 bg-ink-200">
+                <MiniStat label="Active briefs"      value="312" />
+                <MiniStat label="Open proposals"     value="1,840" />
+                <MiniStat label="Avg. fill time"     value="4.6d" />
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-paper-50 px-5 py-4">
+      <div className="font-display text-2xl text-ink-900 leading-none tracking-[-0.02em]">
+        {value}
+      </div>
+      <div className="mt-1.5 text-[11px] uppercase tracking-[0.14em] text-ink-500 font-semibold">
+        {label}
+      </div>
     </div>
   );
 }
 
-function Testimonial({
-  initials,
-  tone,
-  quote,
-  author,
-  role,
-  org,
-  side,
-}: {
-  initials: string;
-  tone: 'mint' | 'violet' | 'amber';
-  quote: string;
-  author: string;
-  role: string;
-  org: string;
-  side: 'creator' | 'brand';
-}) {
-  const tones: Record<string, { bg: string; text: string }> = {
-    mint:   { bg: 'bg-brand-500',     text: 'text-white' },
-    violet: { bg: 'bg-accent-violet', text: 'text-white' },
-    amber:  { bg: 'bg-amber-500',     text: 'text-white' },
-  };
-  const t = tones[tone];
+/* ════════════════════════════════════════════════════════
+   PROCESS — sample brief structure (for brands).
+   ════════════════════════════════════════════════════════ */
+
+function Process() {
   return (
-    <div className="card card-hover p-6 h-full flex flex-col">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-0.5 text-amber-400">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Star key={i} className="w-4 h-4 fill-current" />
-          ))}
+    <section className="container-page py-20 sm:py-28">
+      <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
+        <div className="lg:col-span-4">
+          <Reveal>
+            <span className="eyebrow">/ 05 — Brief anatomy</span>
+            <h2 className="display-md mt-3">
+              Every brief looks like this.
+            </h2>
+            <p className="mt-5 text-ink-500 leading-relaxed">
+              A short, opinionated template that&apos;s clear for creators and
+              structured for brands. No 12-page PDFs.
+            </p>
+          </Reveal>
         </div>
-        <span className={`pill ${side === 'creator' ? 'bg-brand-50 text-brand-700' : 'bg-violet-50 text-accent-violet'}`}>
-          {side === 'creator' ? <><Heart className="w-3 h-3" /> Creator</> : <><Megaphone className="w-3 h-3" /> Brand</>}
-        </span>
+
+        <div className="lg:col-span-8">
+          <Reveal delay={100}>
+            <article className="card p-6 sm:p-8">
+              <header className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="tag tag-ember">Brief</span>
+                    <span className="tag tag-paper">Product launch</span>
+                    <span className="tag tag-outline">YouTube · 30K–80K</span>
+                  </div>
+                  <h3 className="mt-3 font-display text-[clamp(1.5rem,2.6vw,2rem)] leading-[1.1] text-ink-900 tracking-[-0.02em]">
+                    Launch our new adaptogenic cold brew
+                  </h3>
+                  <p className="mt-1 text-sm text-ink-500">
+                    Northwind Beverages · Posted 2h ago · 12 proposals
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-[11px] uppercase tracking-[0.14em] text-ink-500 font-semibold">
+                    Per creator
+                  </div>
+                  <div className="font-display text-2xl text-ink-900 mt-1">$1,200</div>
+                </div>
+              </header>
+
+              <dl className="mt-7 grid sm:grid-cols-2 gap-6 text-sm">
+                <DefRow label="Deliverables">
+                  1 dedicated video (60–90s) + 1 short reel cut
+                </DefRow>
+                <DefRow label="Deadline">Within 21 days of acceptance</DefRow>
+                <DefRow label="Usage rights">Organic only · 90 days</DefRow>
+                <DefRow label="Niche">Lifestyle, wellness, morning routines</DefRow>
+              </dl>
+
+              <footer className="mt-7 pt-5 border-t border-ink-200 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex -space-x-2">
+                  {['bg-ember-500', 'bg-ink-900', 'bg-ink-500', 'bg-paper-300'].map((c, i) => (
+                    <div
+                      key={i}
+                      className={`w-7 h-7 rounded-full border-2 border-paper-50 flex items-center justify-center text-[10px] font-bold text-paper-50 ${c}`}
+                    >
+                      {String.fromCharCode(65 + i)}
+                    </div>
+                  ))}
+                  <span className="ml-3 text-[11px] uppercase tracking-[0.14em] text-ink-500 font-semibold self-center">
+                    + 8 more
+                  </span>
+                </div>
+                <button className="btn btn-primary btn-sm">
+                  Apply <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </footer>
+            </article>
+          </Reveal>
+        </div>
       </div>
-      <p className="mt-4 text-ink-800 leading-relaxed flex-1">“{quote}”</p>
-      <div className="mt-5 flex items-center gap-3 pt-4 border-t border-ink-100">
-        <div className={`w-10 h-10 rounded-full ${t.bg} ${t.text} flex items-center justify-center font-bold text-sm shrink-0`}>
-          {initials}
-        </div>
-        <div className="min-w-0">
-          <div className="text-sm font-semibold text-ink-900 flex items-center gap-1.5 truncate">
-            {author}
-            <BadgeCheck className="w-4 h-4 text-teal-600 shrink-0" />
-          </div>
-          <div className="text-xs text-ink-500 truncate">{role} · {org}</div>
-        </div>
-      </div>
+    </section>
+  );
+}
+
+function DefRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <dt className="eyebrow">{label}</dt>
+      <dd className="mt-1.5 text-ink-700 leading-relaxed">{children}</dd>
     </div>
   );
 }
+
+/* ════════════════════════════════════════════════════════
+   FINAL CTA — confident single band.
+   ════════════════════════════════════════════════════════ */
+
+function FinalCTA({ dashboardLink, onStart }: { dashboardLink: string | null; onStart: () => void }) {
+  return (
+    <section className="container-page pb-20 sm:pb-28">
+      <Reveal>
+        <div className="relative overflow-hidden bg-ink-900 text-paper-50 rounded-[24px] px-6 sm:px-10 lg:px-14 py-12 sm:py-16">
+          {/* Decorative grid */}
+          <div
+            className="absolute inset-0 opacity-[0.05] pointer-events-none"
+            style={{
+              backgroundImage:
+                'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)',
+              backgroundSize: '48px 48px',
+            }}
+            aria-hidden
+          />
+          {/* Ember wedge */}
+          <div
+            className="absolute -right-24 -top-24 w-80 h-80 rounded-full bg-ember-500/30 blur-3xl"
+            aria-hidden
+          />
+
+          <div className="relative grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            <div className="lg:col-span-7">
+              <span className="eyebrow text-ink-400">/ 06 — Get started</span>
+              <h2 className="display-lg mt-3 text-paper-50">
+                Take it for a spin.<br />
+                <span className="text-ember-300 italic font-medium">60 seconds</span> to set up.
+              </h2>
+              <p className="mt-5 text-ink-300 text-lg max-w-md leading-relaxed">
+                Free to explore. Pick a role and you&apos;ll have a working
+                dashboard, sample data and a real proposal flow in front of you.
+              </p>
+            </div>
+
+            <div className="lg:col-span-5 flex flex-col sm:flex-row lg:flex-col gap-3">
+              {dashboardLink ? (
+                <Link to={dashboardLink} className="btn btn-accent btn-lg w-full">
+                  Open my dashboard
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              ) : (
+                <button onClick={onStart} className="btn btn-accent btn-lg w-full">
+                  Start the demo
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+              <Link
+                to="/login"
+                className="btn btn-lg w-full bg-transparent text-paper-50 border border-ink-600 hover:bg-ink-800"
+              >
+                I already have an account
+              </Link>
+              <p className="text-[12px] text-ink-400 mt-1">
+                No credit card. No email confirmation. Pure demo.
+              </p>
+            </div>
+          </div>
+        </div>
+      </Reveal>
+    </section>
+  );
+}
+
+/* ─────────────────────── Reveal wrapper ─────────────────────── */
 
 function Reveal({
-  children,
-  className,
-  delay,
+  children, className, delay,
 }: {
   children: React.ReactNode;
   className?: string;
@@ -658,130 +883,5 @@ function Reveal({
     >
       {children}
     </div>
-  );
-}
-
-/* ===================== Hero Visual ===================== */
-function HeroVisual() {
-  return (
-    <div className="relative h-[480px] sm:h-[560px]">
-      {/* Backdrop glow */}
-      <div className="absolute -inset-10 bg-gradient-radial from-brand-200/40 via-brand-100/10 to-transparent rounded-[2rem] blur-3xl animate-mesh-pan" />
-
-      {/* Floating card 1: Creator profile */}
-      <div
-        className="absolute top-2 right-0 w-[300px] card p-5 anim-float anim-float-1 shadow-pop gradient-border"
-      >
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white flex items-center justify-center font-bold">AJ</div>
-            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white flex items-center justify-center">
-              <BadgeCheck className="w-3.5 h-3.5 text-teal-600 fill-white" />
-            </div>
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm font-semibold text-ink-900 truncate">Avery Johnson</span>
-            </div>
-            <div className="text-xs text-ink-500 truncate">Lifestyle · YouTube · 38.4K</div>
-          </div>
-        </div>
-        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-          <Mini label="Engagement" value="4.8%" />
-          <Mini label="Rate" value="$450" />
-          <Mini label="Profile" value="90%" />
-        </div>
-        <div className="mt-3 flex items-center justify-between text-xs text-ink-500">
-          <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" /> 92% reply</span>
-          <span className="flex items-center gap-1"><Play className="w-3.5 h-3.5" /> 24 videos</span>
-        </div>
-      </div>
-
-      {/* Floating card 2: New match / campaign */}
-      <div className="absolute top-[200px] left-0 w-[320px] card p-5 anim-float anim-float-2 shadow-pop">
-        <div className="flex items-center gap-2">
-          <span className="pill bg-brand-50 text-brand-700">New match</span>
-          <span className="pill bg-emerald-50 text-emerald-700">
-            <CheckCircle2 className="w-3 h-3" /> Eligible
-          </span>
-          <span className="ml-auto text-[10px] text-ink-400 font-semibold">2m ago</span>
-        </div>
-        <div className="mt-3 text-sm font-bold text-ink-900 leading-snug">
-          Launch our new adaptogenic cold brew
-        </div>
-        <div className="mt-1 text-xs text-ink-500">Northwind Beverages · $1,200 / creator</div>
-        <div className="mt-3 h-12 -mx-1">
-          <Sparkline values={[6, 8, 5, 9, 7, 11, 9, 12, 10, 14, 13, 18]} />
-        </div>
-        <div className="mt-3 flex items-center justify-between">
-          <div className="flex -space-x-2">
-            {['AJ', 'MP', 'HK', '+5'].map((i, idx) => (
-              <div
-                key={i}
-                className={`w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white
-                  ${idx === 0 ? 'bg-brand-500' : idx === 1 ? 'bg-amber-500' : idx === 2 ? 'bg-sky-500' : 'bg-ink-500'}`}
-              >
-                {i}
-              </div>
-            ))}
-          </div>
-          <button className="btn btn-primary btn-sm">
-            Apply <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Floating card 3: Notification */}
-      <div className="absolute bottom-0 right-6 w-[280px] card p-4 flex items-center gap-3 anim-float anim-float-3 shadow-pop">
-        <div className="relative shrink-0">
-          <div className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center">
-            <CheckCircle2 className="w-5 h-5" />
-          </div>
-          <span className="absolute inset-0 rounded-full ring-2 ring-emerald-300 animate-pulse-ring" />
-        </div>
-        <div className="min-w-0">
-          <div className="text-sm font-semibold text-ink-900 truncate">You were shortlisted!</div>
-          <div className="text-xs text-ink-500 truncate">Northwind Beverages · 2h ago</div>
-        </div>
-      </div>
-
-      {/* Floating card 4: tiny stat chip */}
-      <div className="absolute top-[120px] right-12 card px-3 py-2 anim-float anim-float-2 hidden xl:flex items-center gap-2 text-xs shadow-pop">
-        <span className="w-2 h-2 rounded-full bg-emerald-500" />
-        <span className="font-semibold text-ink-700">+128 proposals this hour</span>
-      </div>
-    </div>
-  );
-}
-
-function Mini({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg bg-ink-50 py-2">
-      <div className="text-[10px] uppercase tracking-wide text-ink-500">{label}</div>
-      <div className="text-sm font-bold text-ink-900">{value}</div>
-    </div>
-  );
-}
-
-function Sparkline({ values }: { values: number[] }) {
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  const w = 280;
-  const h = 36;
-  const stepX = w / (values.length - 1);
-  const points = values
-    .map((v, i) => `${i * stepX},${h - ((v - min) / Math.max(1, max - min)) * (h - 4) - 2}`)
-    .join(' ');
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-full" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="sparkline-fade" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#14a800" stopOpacity="0.25" />
-          <stop offset="100%" stopColor="#14a800" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polyline points={`0,${h} ${points} ${w},${h}`} fill="url(#sparkline-fade)" />
-      <polyline points={points} fill="none" stroke="#14a800" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   );
 }
