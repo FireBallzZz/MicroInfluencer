@@ -56,7 +56,7 @@ export function Select(props: SelectHTMLAttributes<HTMLSelectElement> & { invali
 }
 
 export function FormField({
-  label, htmlFor, error, helper, children, optional,
+  label, htmlFor, error, helper, children, optional, required,
 }: {
   label: string;
   htmlFor?: string;
@@ -64,11 +64,15 @@ export function FormField({
   helper?: string;
   children: ReactNode;
   optional?: boolean;
+  required?: boolean;
 }) {
   return (
     <div className="mb-4">
       <div className="flex items-center justify-between">
-        <Label htmlFor={htmlFor}>{label}</Label>
+        <Label htmlFor={htmlFor}>
+          {label}
+          {required && <span className="text-ember-500 ml-0.5" aria-label="required">*</span>}
+        </Label>
         {optional && <span className="text-[11px] text-ink-400 font-mono uppercase tracking-[0.14em]">Optional</span>}
       </div>
       {children}

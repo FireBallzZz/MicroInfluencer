@@ -23,6 +23,7 @@ import CountUp from '../../components/CountUp';
 import { useReveal } from '../../hooks/useReveal';
 import { discoverableCreators, NICHES, fmtNumber, currency, seedCampaigns, fmtDate } from '../../data/seed';
 import { Avatar, ChannelArt, PlatformIcon, CampaignStatusBadge } from '../../components/ui';
+import clsx from 'clsx';
 
 /* ─────────────────────── Data ─────────────────────── */
 
@@ -169,7 +170,7 @@ function Hero({
                   className="btn btn-primary btn-lg"
                 >
                   Try the demo
-                  <ArrowRight className="w-4 h-4" />
+                  <Search className="w-4 h-4" />
                 </button>
                 <a href="#how" className="btn btn-secondary btn-lg">
                   <Play className="w-3.5 h-3.5 fill-current" />
@@ -239,10 +240,29 @@ function Hero({
 
         <Reveal delay={300}>
           <div className="mt-14 sm:mt-20 grid grid-cols-2 sm:grid-cols-4 gap-y-8 gap-x-6 border-t border-ink-200 pt-8">
-            <Stat n={<CountUp to={SHOWCASE_CREATORS.length * 80 + 8400} duration={1400} />} label="Demo creators in pool" />
-            <Stat n={<>{SHOWCASE_CAMPAIGNS.length * 12 + 38}</>} label="Demo briefs shipped" />
-            <Stat n={<>{<CountUp to={3.2} duration={1400} decimals={1} suffix="x" />}</>} label="Median ROI on hires" />
-            <Stat n={<>{<CountUp to={94} duration={1400} suffix="%" />}</>} label="Demo briefs filled in 7d" />
+            <Stat
+              value={SHOWCASE_CREATORS.length * 80 + 8400}
+              label="Demo creators in pool"
+              hint="Illustrative pool · demo only"
+            />
+            <Stat
+              value={SHOWCASE_CAMPAIGNS.length * 12 + 38}
+              label="Demo briefs shipped"
+              hint="Across demo brands"
+            />
+            <Stat
+              value={3.2}
+              decimals={1}
+              suffix="x"
+              label="Median ROI on hires"
+              hint="Demo campaign post-mortems"
+            />
+            <Stat
+              value={94}
+              suffix="%"
+              label="Demo briefs filled in 7d"
+              hint="Median across the demo pool"
+            />
           </div>
         </Reveal>
       </div>
@@ -250,15 +270,54 @@ function Hero({
   );
 }
 
-function Stat({ n, label }: { n: React.ReactNode; label: string }) {
+/**
+ * Stat — one KPI tile in the 4-up strip under the hero.
+ *
+ * - The big number counts up from 0 to `value` using `CountUp` (intersection
+ *   observed, reduced-motion safe).
+ * - The label fades in 80ms after the row enters view.
+ * - The hint stays muted as a tertiary line, so the tile reads as a single
+ *   editorial card rather than a marketing badge.
+ */
+function Stat({
+  value,
+  decimals = 0,
+  prefix = '',
+  suffix = '',
+  label,
+  hint,
+}: {
+  value: number;
+  decimals?: number;
+  prefix?: string;
+  suffix?: string;
+  label: string;
+  hint?: string;
+}) {
   return (
-    <div>
-      <div className="font-display text-[clamp(1.75rem,3.4vw,2.6rem)] font-semibold leading-none text-ink-900 tracking-[-0.025em]">
-        {n}
+    <div className="group">
+      <div
+        className="font-display font-semibold leading-none text-ink-900 tracking-[-0.025em]
+                   text-[clamp(1.75rem,3.4vw,2.6rem)]
+                   transition-colors duration-300 ease-out-quint
+                   group-hover:text-ember-700"
+      >
+        <CountUp
+          to={value}
+          decimals={decimals}
+          prefix={prefix}
+          suffix={suffix}
+          duration={1500}
+        />
       </div>
-      <div className="mt-2 text-[12px] font-medium text-ink-500 leading-snug max-w-[18ch]">
+      <div className="mt-2.5 text-[12px] font-semibold text-ink-700 leading-snug">
         {label}
       </div>
+      {hint && (
+        <div className="mt-1 text-[11px] text-ink-400 leading-snug font-mono uppercase tracking-[0.12em]">
+          {hint}
+        </div>
+      )}
     </div>
   );
 }
@@ -269,24 +328,62 @@ function Stat({ n, label }: { n: React.ReactNode; label: string }) {
 
 function TickerBar() {
   return (
-    <section className="border-y border-ink-200 bg-paper-100/50 py-6 overflow-hidden">
+    <section
+      aria-label="Demo brands in the marketplace"
+      className="border-y border-ink-200 bg-paper-100/60 py-6 overflow-hidden"
+    >
       <div className="container-page mb-3 flex items-center justify-between text-ink-500">
-        <span className="eyebrow">Demo brands in the marketplace</span>
+        <span className="eyebrow flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-ember-500 animate-blink" />
+          Demo brands in the marketplace
+        </span>
         <span className="hidden sm:block eyebrow text-ink-400">Illustrative · not real clients</span>
       </div>
-      <div className="marquee-mask overflow-hidden">
-        <div className="marquee-track gap-12 pr-12">
-          {[...PARTNERS, ...PARTNERS].map((name, i) => (
-            <div
-              key={`${name}-${i}`}
-              className="flex items-center gap-2.5 text-ink-500 hover:text-ink-900 transition-colors shrink-0"
-            >
-              <span className="font-mono text-[11px] text-ink-400">0{(i % PARTNERS.length) + 1}</span>
-              <span className="font-display text-[20px] font-medium tracking-[-0.01em] whitespace-nowrap">
-                {name}
-              </span>
-            </div>
-          ))}
+
+      {/* The marquee spans edge-to-edge: the mask gradients handle the
+          soft-edge, and the inner track contains the duplicated list so the
+          loop is seamless. Pause on hover for readability. */}
+      <div className="marquee-mask marquee-pause-on-hover">
+        <div className="marquee-track gap-8 pr-8" style={{ animationDuration: '36s' }}>
+          {[...PARTNERS, ...PARTNERS].map((name, i) => {
+            const initial = name[0];
+            // Pick one of 6 muted swatches per brand — stable by index.
+            const swatches = [
+              'bg-ember-100 text-ember-700',
+              'bg-sky-100 text-sky-700',
+              'bg-amber-100 text-amber-700',
+              'bg-rose-100 text-rose-700',
+              'bg-emerald-100 text-emerald-700',
+              'bg-violet-100 text-violet-700',
+            ];
+            const swatch = swatches[(name.charCodeAt(0) + i) % swatches.length];
+            return (
+              <div
+                key={`${name}-${i}`}
+                className="inline-flex items-center gap-2.5 h-10 pl-1.5 pr-4
+                           bg-paper-50 border border-ink-200/80 rounded-md
+                           text-ink-700 hover:text-ink-900 hover:border-ink-300
+                           transition-colors shrink-0"
+              >
+                <span
+                  className={clsx(
+                    'w-7 h-7 rounded-sm flex items-center justify-center',
+                    'font-display font-semibold text-[14px] leading-none',
+                    swatch,
+                  )}
+                  aria-hidden
+                >
+                  {initial}
+                </span>
+                <span className="font-display text-[15px] font-medium tracking-[-0.015em] whitespace-nowrap">
+                  {name}
+                </span>
+                <span className="font-mono text-[10px] text-ink-400 ml-1 hidden md:inline">
+                  0{(i % PARTNERS.length) + 1}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -353,7 +450,7 @@ function Manifesto() {
 
 function MarketplaceSection() {
   return (
-    <section id="marketplace" className="bg-paper-100/40 border-y border-ink-200 py-20 sm:py-28">
+    <section id="marketplace" className="bg-paper-100/60 border-y border-ink-200 py-20 sm:py-28">
       <div className="container-page">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-end mb-12">
           <div className="lg:col-span-7">
@@ -465,7 +562,7 @@ function MarketplaceSection() {
 
 function HowItWorks() {
   return (
-    <section id="how" className="bg-ink-900 text-ink-200 py-20 sm:py-28 relative overflow-hidden">
+    <section id="how" className="bg-ink-900 text-ink-200 py-20 sm:py-28 min-h-[calc(100vh-64px)] flex items-center relative overflow-hidden scroll-mt-16">
       <div
         className="absolute inset-0 opacity-[0.06] pointer-events-none"
         style={{

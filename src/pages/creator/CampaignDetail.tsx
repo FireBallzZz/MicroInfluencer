@@ -21,12 +21,14 @@ export default function CampaignDetail() {
 
   if (!campaign) {
     return (
-      <div className="card p-10 text-center">
-        <Megaphone className="w-7 h-7 text-ink-300 mx-auto mb-2" />
-        <div className="text-sm font-semibold text-ink-900">Campaign not found</div>
-        <Link to="/creator/campaigns" className="text-sm link-accent inline-flex items-center gap-1 mt-3">
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to campaigns
-        </Link>
+      <div className="container-page py-6 sm:py-8">
+        <div className="card p-10 text-center">
+          <Megaphone className="w-7 h-7 text-ink-300 mx-auto mb-2" />
+          <div className="text-sm font-semibold text-ink-900">Campaign not found</div>
+          <Link to="/creator/campaigns" className="text-sm link-accent inline-flex items-center gap-1 mt-3">
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to campaigns
+          </Link>
+        </div>
       </div>
     );
   }
@@ -66,7 +68,7 @@ export default function CampaignDetail() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container-page py-6 sm:py-8 space-y-6">
       <Link to="/creator/campaigns" className="text-sm text-ink-600 hover:text-ink-900 inline-flex items-center gap-1">
         <ArrowLeft className="w-4 h-4" /> Back to campaigns
       </Link>

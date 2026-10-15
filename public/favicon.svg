@@ -1,1 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#14a800"/><path d="M9 22V10h2.4l4.2 7.6L19.8 10h2.4v12h-2V13.6L16 21h-1.6L11 13.6V22z" fill="#fff"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#0B0A08"/>
+  <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-style="italic" font-weight="600" font-size="22"
+        fill="#FBF9F3"
+        letter-spacing="-1">µ</text>
+  <circle cx="24" cy="24" r="2.5" fill="#D96541"/>
+</svg>

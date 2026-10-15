@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
 import { useStore } from '../../state/Store';
 import {
-  EmptyState, ProposalStatusBadge, PageHeader, ChannelArt, SectionHeader,
+  EmptyState, ProposalStatusBadge, PageHeader, ChannelArt, StatRow,
 } from '../../components/ui';
 import { fmtRelativeTime, currency } from '../../data/seed';
 import { useState, useMemo } from 'react';
 import clsx from 'clsx';
-import { Compass, ListChecks } from 'lucide-react';
+import { Compass, ListChecks, ArrowUpRight, Filter } from 'lucide-react';
 
 const TABS = ['All', 'Pending', 'Shortlisted', 'Accepted', 'Rejected', 'Withdrawn'] as const;
 
@@ -24,80 +24,155 @@ export default function MyApplications() {
     Withdrawn: myProposals.filter((p) => p.status === 'withdrawn').length,
   }), [myProposals]);
 
-  const filtered = tab === 'All' ? myProposals : myProposals.filter((p) => p.status === tab.toLowerCase());
+  const filtered = tab === 'All'
+    ? myProposals
+    : myProposals.filter((p) => p.status === tab.toLowerCase());
+
+  const acceptedTotal = myProposals.filter((p) => p.status === 'accepted').length;
+  const acceptanceRate = myProposals.length > 0
+    ? Math.round((acceptedTotal / myProposals.length) * 100)
+    : 0;
+  const inFlight = counts.Pending + counts.Shortlisted;
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Applications"
-        title="My proposals"
-        description="Track every application. Withdraw if you change your mind."
-      />
+    <div className="container-page py-6 sm:py-8">
+      <div className="space-y-6">
+        <PageHeader
+          eyebrow="Applications"
+          title="My proposals"
+          description={
+            inFlight > 0
+              ? `${inFlight} in flight · ${acceptedTotal} accepted · ${myProposals.length} all time`
+              : myProposals.length > 0
+              ? `${acceptedTotal} accepted out of ${myProposals.length} sent`
+              : 'Track every application. Withdraw if you change your mind.'
+          }
+          action={
+            <Link to="/creator/campaigns" className="btn btn-primary btn-md self-start sm:self-auto">
+              <Compass className="w-4 h-4" /> Find work
+            </Link>
+          }
+        />
 
-      <div className="border-b border-ink-200 -mx-3 sm:mx-0">
-        <div className="flex gap-0 overflow-x-auto no-scrollbar px-3 sm:px-0">
-          {TABS.map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={clsx(
-                'px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px whitespace-nowrap transition-colors',
-                tab === t
-                  ? 'border-ember-500 text-ink-900'
-                  : 'border-transparent text-ink-500 hover:text-ink-900'
-              )}
-            >
-              {t}
-              <span className="ml-1.5 text-[10px] font-mono text-ink-400">
-                {counts[t]}
-              </span>
-            </button>
-          ))}
+        {/* Quick stats */}
+        <StatRow
+          items={[
+            { label: 'Total sent',   value: myProposals.length, hint: 'all time' },
+            { label: 'In flight',    value: inFlight, hint: 'pending + shortlisted' },
+            { label: 'Acceptance',   value: `${acceptanceRate}%`, hint: 'of sent' },
+            { label: 'Accepted',     value: acceptedTotal, hint: 'hired' },
+          ]}
+        />
+
+        {/* Tab strip */}
+        <div className="card overflow-hidden">
+          <div className="flex border-b border-ink-200 overflow-x-auto no-scrollbar">
+            {TABS.map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={clsx(
+                  'relative inline-flex items-center gap-2 px-4 sm:px-5 py-3.5 text-sm font-semibold whitespace-nowrap transition-colors shrink-0',
+                  tab === t
+                    ? 'text-ink-900'
+                    : 'text-ink-500 hover:text-ink-900',
+                )}
+                aria-pressed={tab === t}
+              >
+                {t}
+                <span
+                  className={clsx(
+                    'inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-sm text-[10px] font-mono',
+                    tab === t ? 'bg-ink-900 text-paper-50' : 'bg-paper-100 text-ink-500',
+                  )}
+                >
+                  {counts[t]}
+                </span>
+                {tab === t && (
+                  <span
+                    aria-hidden
+                    className="absolute left-3 right-3 sm:left-4 sm:right-4 -bottom-px h-0.5 bg-ember-500"
+                  />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {filtered.length === 0 ? (
+            <EmptyState
+              icon={tab === 'All' ? <ListChecks className="w-5 h-5" /> : <Filter className="w-5 h-5" />}
+              title={tab === 'All' ? 'No proposals yet' : `No ${tab.toLowerCase()} proposals`}
+              description={
+                tab === 'All'
+                  ? 'Browse briefs and submit your first proposal.'
+                  : 'Try a different tab or apply to more briefs.'
+              }
+              action={
+                tab === 'All' ? (
+                  <Link to="/creator/campaigns" className="btn btn-primary btn-md">
+                    <Compass className="w-4 h-4" /> Find work
+                  </Link>
+                ) : (
+                  <button onClick={() => setTab('All')} className="btn btn-secondary btn-md">
+                    Show all
+                  </button>
+                )
+              }
+              hint="Demo only — proposals live in localStorage."
+            />
+          ) : (
+            <ul className="divide-y divide-ink-200/60 stagger">
+              {filtered.map((p) => {
+                const c = campaigns.find((x) => x.id === p.campaignId);
+                return (
+                  <li key={p.id}>
+                    <Link
+                      to={`/creator/applications/${p.id}`}
+                      className="block p-4 sm:p-5 hover:bg-paper-100/60 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <ChannelArt
+                          name={c?.brandName ?? 'Brand'}
+                          seed={c?.brandId ?? 'unknown'}
+                          height={48}
+                          className="w-12 rounded-md shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="font-semibold text-ink-900 truncate">
+                              {c?.title ?? 'Campaign'}
+                            </div>
+                            <ProposalStatusBadge status={p.status} />
+                          </div>
+                          <div className="text-xs text-ink-500 mt-0.5 truncate">
+                            {c?.brandName} · {c?.category} · {c?.requiredPlatform} · submitted {fmtRelativeTime(p.submittedAt)}
+                          </div>
+                        </div>
+                        <div className="hidden sm:flex flex-col items-end shrink-0">
+                          <div className="font-mono text-sm font-semibold text-ink-900">
+                            {currency(p.proposedRate)}
+                          </div>
+                          <div className="text-[10px] text-ink-400 uppercase tracking-[0.14em] font-mono">
+                            proposed
+                          </div>
+                        </div>
+                        <ArrowUpRight className="w-4 h-4 text-ink-300 group-hover:text-ember-600 group-hover:translate-x-0.5 transition-all shrink-0 hidden sm:block" />
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {filtered.length > 0 && (
+            <div className="px-4 sm:px-5 py-3 border-t border-ink-200 flex items-center justify-between text-xs text-ink-500">
+              <span>Showing {filtered.length} of {myProposals.length}</span>
+              <span className="font-mono">demo · localStorage</span>
+            </div>
+          )}
         </div>
       </div>
-
-      {filtered.length === 0 ? (
-        <div className="card">
-          <EmptyState
-            icon={tab === 'All' ? <ListChecks className="w-5 h-5" /> : undefined}
-            title={tab === 'All' ? 'No proposals yet' : `No ${tab.toLowerCase()} proposals`}
-            description={tab === 'All' ? 'Browse briefs and submit your first proposal.' : 'Try a different tab.'}
-            action={tab === 'All' ? (
-              <Link to="/creator/campaigns" className="btn btn-primary btn-md">
-                <Compass className="w-4 h-4" /> Find work
-              </Link>
-            ) : null}
-            hint="Demo only — proposals live in localStorage."
-          />
-        </div>
-      ) : (
-        <ul className="space-y-3 stagger">
-          {filtered.map((p) => {
-            const c = campaigns.find((x) => x.id === p.campaignId);
-            return (
-              <li key={p.id}>
-                <Link
-                  to={`/creator/applications/${p.id}`}
-                  className="card card-hover p-4 sm:p-5 flex items-center gap-4 block"
-                >
-                  <ChannelArt name={c?.brandName ?? 'Brand'} seed={c?.brandId ?? 'unknown'} height={48} className="w-12 rounded-md shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-ink-900 truncate">{c?.title}</div>
-                    <div className="text-xs text-ink-500 mt-0.5">
-                      {c?.brandName} · {c?.category} · {c?.requiredPlatform} · submitted {fmtRelativeTime(p.submittedAt)}
-                    </div>
-                  </div>
-                  <div className="text-right hidden sm:block shrink-0">
-                    <div className="font-mono text-sm font-semibold text-ink-900">{currency(p.proposedRate)}</div>
-                    <div className="text-[11px] text-ink-500 uppercase tracking-[0.12em]">Proposed</div>
-                  </div>
-                  <ProposalStatusBadge status={p.status} />
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
     </div>
   );
 }

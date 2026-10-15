@@ -28,6 +28,7 @@ export type CreatorProfile = {
   id: string;
   fullName: string;
   avatarUrl?: string;
+  coverUrl?: string;
   bio: string;
   niche: Niche;
   primaryPlatform: Platform;
@@ -63,7 +64,11 @@ export type BrandProfile = {
   industry: string;
   website: string;
   logoUrl?: string;
+  coverUrl?: string;
   about: string;
+  size?: '1–10' | '11–50' | '51–200' | '201–1000' | '1000+';
+  headquarters?: string;
+  foundedYear?: number;
 };
 
 export type CampaignStatus = 'draft' | 'published' | 'closed';

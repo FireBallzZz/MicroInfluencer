@@ -11,7 +11,7 @@ export default function BrandProfile() {
   const closed = mine.filter((c) => c.status === 'closed').length;
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="container-page py-6 sm:py-8 space-y-6 max-w-3xl">
       <PageHeader
         eyebrow="Profile"
         title="Company profile"
@@ -24,9 +24,25 @@ export default function BrandProfile() {
       />
 
       <div className="card overflow-hidden">
-        <ChannelArt name={brand.companyName} seed={brand.id} height={120} className="rounded-none" />
+        {brand.coverUrl ? (
+          <img
+            src={brand.coverUrl}
+            alt="Cover"
+            className="w-full h-[160px] sm:h-[200px] object-cover"
+          />
+        ) : (
+          <ChannelArt name={brand.companyName} seed={brand.id} height={120} className="rounded-none w-full" />
+        )}
         <div className="p-5 sm:p-6 flex items-end gap-4 -mt-10 sm:-mt-12">
-          <ChannelArt name={brand.companyName} seed={brand.id} height={72} className="w-20 sm:w-24 rounded-md ring-4 ring-paper-50 shrink-0" />
+          {brand.logoUrl ? (
+            <img
+              src={brand.logoUrl}
+              alt={brand.companyName}
+              className="w-20 sm:w-24 h-20 sm:h-24 rounded-md object-cover ring-4 ring-paper-50 shrink-0"
+            />
+          ) : (
+            <ChannelArt name={brand.companyName} seed={brand.id} height={72} className="w-20 sm:w-24 rounded-md ring-4 ring-paper-50 shrink-0" />
+          )}
           <div className="min-w-0 pb-1 flex-1">
             <h1 className="font-display text-2xl sm:text-3xl text-ink-900 leading-none tracking-[-0.02em]">
               {brand.companyName}

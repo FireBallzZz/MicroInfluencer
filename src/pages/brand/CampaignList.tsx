@@ -35,7 +35,7 @@ export default function CampaignList() {
   const filtered = tab === 'All' ? mine : mine.filter((c) => c.status === tab.toLowerCase());
 
   return (
-    <div className="space-y-6">
+    <div className="container-page py-6 sm:py-8 space-y-6">
       <PageHeader
         eyebrow="Campaigns"
         title="My campaigns"

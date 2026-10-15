@@ -9,6 +9,7 @@ import {
 import { useEffect, useState } from 'react';
 import { discoverableCreators, fmtNumber } from '../data/seed';
 import { ChannelArt, PlatformIcon } from './ui';
+import { Wordmark } from './Logo';
 
 type Variant = 'neutral' | 'creator' | 'brand';
 
@@ -23,12 +24,7 @@ export default function AuthVisual({ variant = 'neutral' }: { variant?: Variant 
   return (
     <div className="w-full flex flex-col gap-6 text-paper-50">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-ember-400" />
-          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-300">
-            {variant === 'creator' ? 'For creators' : variant === 'brand' ? 'For brands' : 'The platform'}
-          </span>
-        </div>
+        <Wordmark to="/" size="sm" variant="invert" />
         <span className="font-mono text-[11px] text-ink-400">v0.2 · 2026</span>
       </div>
 

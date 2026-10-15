@@ -55,7 +55,7 @@ export default function CreatorDiscovery() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="container-page py-6 sm:py-8 space-y-6">
       <PageHeader
         eyebrow="Marketplace"
         title="Find creators"
@@ -64,8 +64,8 @@ export default function CreatorDiscovery() {
 
       <div className="card">
         <div className="p-4 sm:p-5 flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-ink-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <div className="relative flex-1 min-w-0">
+            <Search className="w-4 h-4 text-ink-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <Input
               className="pl-10 h-11"
               placeholder="Search by name, niche, location or bio"
@@ -73,7 +73,7 @@ export default function CreatorDiscovery() {
               onChange={(e) => setKeyword(e.target.value)}
             />
           </div>
-          <div className="hidden sm:flex gap-2">
+          <div className="hidden sm:flex gap-2 flex-wrap">
             <Select value={niche} onChange={(e) => setNiche(e.target.value)} className="min-w-[160px]">
               <option value="">All niches</option>
               {NICHES.map((n) => <option key={n} value={n}>{n}</option>)}
@@ -93,14 +93,14 @@ export default function CreatorDiscovery() {
           <Button
             variant={showAdvanced ? 'primary' : 'secondary'}
             onClick={() => setShowAdvanced((v) => !v)}
-            className="sm:hidden"
+            className="sm:hidden w-full"
           >
             <SlidersHorizontal className="w-4 h-4" /> Filters
           </Button>
         </div>
 
         {showAdvanced && (
-          <div className="border-t border-ink-200 p-4 sm:p-5 grid sm:grid-cols-4 gap-3 anim-fade-in bg-paper-50">
+          <div className="border-t border-ink-200 p-4 sm:p-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-3 anim-fade-in bg-paper-50">
             <Field label="Location">
               <div className="relative">
                 <MapPin className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -121,7 +121,7 @@ export default function CreatorDiscovery() {
             <Field label="Min engagement (%)">
               <Input type="number" step="0.1" placeholder="3" value={minEngagement} onChange={(e) => setMinEngagement(e.target.value)} />
             </Field>
-            <label className="flex items-center gap-2 sm:col-span-4 text-sm text-ink-700">
+            <label className="flex items-center gap-2 sm:col-span-2 lg:col-span-4 text-sm text-ink-700">
               <input
                 type="checkbox"
                 checked={verifiedOnly}
@@ -133,14 +133,14 @@ export default function CreatorDiscovery() {
           </div>
         )}
 
-        <div className="px-4 sm:px-5 py-2.5 border-t border-ink-200 flex items-center justify-between gap-3 text-xs text-ink-500">
+        <div className="px-4 sm:px-5 py-2.5 border-t border-ink-200 flex flex-wrap items-center justify-between gap-2 sm:gap-3 text-xs text-ink-500">
           <span>
             <span className="font-mono text-ink-900">{results.length}</span> creators
             {hasFilters && <span className="text-ink-400"> · filtered</span>}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="hidden sm:inline">Sort by</span>
-            <Select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="h-8 py-0 text-xs min-w-[140px]">
+            <Select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="h-8 py-0 text-xs w-full sm:w-auto sm:min-w-[140px]">
               <option value="relevance">Relevance</option>
               <option value="followers">Followers (high to low)</option>
               <option value="engagement">Engagement (high to low)</option>
@@ -213,9 +213,9 @@ export default function CreatorDiscovery() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-paper-50 py-2 px-2.5 text-center">
-      <div className="eyebrow !text-[9px]">{label}</div>
-      <div className="num-display text-sm mt-0.5">{value}</div>
+    <div className="bg-paper-50 py-2 px-2 text-center min-w-0 overflow-hidden">
+      <div className="eyebrow !text-[10px] truncate">{label}</div>
+      <div className="num-display text-sm mt-0.5 truncate">{value}</div>
     </div>
   );
 }

@@ -23,11 +23,13 @@ export default function ProposalManagement() {
 
   if (!campaign) {
     return (
-      <div className="card p-10 text-center">
-        <div className="text-sm font-semibold text-ink-900">Campaign not found</div>
-        <Link to="/brand/campaigns" className="text-sm link-accent inline-flex items-center gap-1 mt-3">
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to campaigns
-        </Link>
+      <div className="container-page py-6 sm:py-8">
+        <div className="card p-10 text-center">
+          <div className="text-sm font-semibold text-ink-900">Campaign not found</div>
+          <Link to="/brand/campaigns" className="text-sm link-accent inline-flex items-center gap-1 mt-3">
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to campaigns
+          </Link>
+        </div>
       </div>
     );
   }
@@ -57,7 +59,7 @@ export default function ProposalManagement() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="container-page py-6 sm:py-8 space-y-6">
       <Link to={`/brand/campaigns/${campaign.id}`} className="text-sm text-ink-600 hover:text-ink-900 inline-flex items-center gap-1">
         <ArrowLeft className="w-4 h-4" /> Back to campaign
       </Link>
@@ -132,7 +134,7 @@ export default function ProposalManagement() {
                       </Link>
                       <ProposalStatusBadge status={p.status} />
                     </div>
-                    <div className="text-xs text-ink-500 mt-1">
+                    <div className="text-xs text-ink-500 mt-1 break-words">
                       {p.creatorNiche} · {p.creatorPlatform} · {fmtNumber(p.creatorFollowers)} followers · {p.creatorEngagement}% engagement
                     </div>
                   </div>
@@ -143,7 +145,7 @@ export default function ProposalManagement() {
                 </div>
 
                 {p.coverMessage && (
-                  <blockquote className="mt-4 text-sm text-ink-700 leading-relaxed bg-paper-100 border-l-2 border-ember-500 rounded-r-md p-3 whitespace-pre-line">
+                  <blockquote className="mt-4 text-sm text-ink-700 leading-relaxed bg-paper-100 border-l-2 border-ember-500 rounded-r-md p-3 whitespace-pre-line break-words">
                     {p.coverMessage}
                   </blockquote>
                 )}
@@ -166,9 +168,10 @@ export default function ProposalManagement() {
                                 href={link.url}
                                 target="_blank"
                                 rel="noreferrer noopener"
-                                className="text-ember-600 hover:text-ember-700 font-semibold inline-flex items-center gap-1"
+                                className="text-ember-600 hover:text-ember-700 font-semibold inline-flex items-center gap-1 break-all min-w-0"
                               >
-                                <ExternalLink className="w-3.5 h-3.5" /> {link.title || link.url}
+                                <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                                <span className="break-all min-w-0">{link.title || link.url}</span>
                               </a>
                             </li>
                           ))}

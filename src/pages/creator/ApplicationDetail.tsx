@@ -20,7 +20,11 @@ export default function ApplicationDetail() {
   const [reasonModal, setReasonModal] = useState(false);
   const [reason, setReason] = useState('');
 
-  if (!proposal) return <div className="card p-6">Proposal not found.</div>;
+  if (!proposal) return (
+    <div className="container-page py-6 sm:py-8">
+      <div className="card p-6">Proposal not found.</div>
+    </div>
+  );
   const campaign = campaigns.find((c) => c.id === proposal.campaignId);
 
   const canWithdraw = ['pending', 'shortlisted', 'accepted'].includes(proposal.status);
@@ -34,7 +38,7 @@ export default function ApplicationDetail() {
   };
 
   return (
-    <div className="space-y-5 max-w-3xl">
+    <div className="container-page py-6 sm:py-8 space-y-5 max-w-3xl">
       <Link to="/creator/applications" className="text-sm text-ink-600 hover:text-ink-900 inline-flex items-center gap-1">
         <ArrowLeft className="w-4 h-4" /> Back to my proposals
       </Link>

@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import PublicLayout from './components/PublicLayout';
 import AppShell from './components/AppShell';
+import ScrollToTop from './components/ScrollToTop';
 import { useAuth } from './state/AuthContext';
 
 import Landing from './pages/public/Landing';
@@ -45,7 +46,9 @@ function Protected({ role, children }: { role: 'creator' | 'brand'; children: JS
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -85,6 +88,7 @@ export default function App() {
       </Route>
 
       <Route path="*" element={<NotFound />} />
-    </Routes>
+      </Routes>
+    </>
   );
 }

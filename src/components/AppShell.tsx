@@ -1,62 +1,57 @@
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  User,
-  Search,
-  Bell,
-  Compass,
-  ListChecks,
-  Link2,
-  LogOut,
-  Plus,
-  Megaphone,
-  Building2,
-  Menu,
-  X,
-  ChevronDown,
-  CheckCircle2,
-  ArrowRight,
-  Filter,
-  Command,
+  User, Search, Bell, Compass, ListChecks, Link2, LogOut, Plus,
+  Megaphone, Building2, Menu, X, ChevronDown, CheckCircle2, ArrowRight,
+  Command, Sparkles, Home, ArrowUpRight,
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { useAuth } from '../state/AuthContext';
-import { useStore, markAllNotificationsRead, markNotificationRead } from '../state/Store';
+import {
+  useStore, markAllNotificationsRead, markNotificationRead,
+} from '../state/Store';
 import { fmtRelativeTime } from '../data/seed';
 import type { AppNotification, Role } from '../types';
 import { useAnimatedOpen } from './useAnimatedOpen';
 import { Avatar } from './ui';
+import { Wordmark, Mark } from './Logo';
 
-const creatorNav = [
-  { to: '/creator/dashboard',    label: 'Dashboard',   icon: LayoutDashboard, end: true  },
-  { to: '/creator/profile',      label: 'Profile',     icon: User,            end: false },
-  { to: '/creator/campaigns',    label: 'Find work',   icon: Compass,         end: false },
-  { to: '/creator/applications', label: 'My proposals',icon: ListChecks,      end: false },
-  { to: '/creator/accounts',     label: 'Connected accounts', icon: Link2,    end: false },
-] as const;
+type NavItem = { to: string; label: string; end?: boolean };
+type Accent = 'ink' | 'ember' | 'sky' | 'amber' | 'rose';
+type QuickAction = { label: string; hint: string; to: string; icon: any; accent: Accent };
 
-const brandNav = [
-  { to: '/brand/dashboard',         label: 'Dashboard',       icon: LayoutDashboard, end: true  },
-  { to: '/brand/creators',          label: 'Find creators',   icon: Search,           end: false },
-  { to: '/brand/campaigns',         label: 'My campaigns',    icon: Megaphone,        end: false },
-  { to: '/brand/campaigns/create',  label: 'Create campaign', icon: Plus,             end: false },
-  { to: '/brand/profile',           label: 'Company profile', icon: Building2,        end: false },
-] as const;
+const creatorNav: NavItem[] = [
+  { to: '/creator/dashboard',    label: 'Dashboard',   end: true },
+  { to: '/creator/profile',      label: 'Profile' },
+  { to: '/creator/campaigns',    label: 'Find work' },
+  { to: '/creator/applications', label: 'Proposals' },
+  { to: '/creator/accounts',     label: 'Accounts' },
+];
 
-const quickActionsByRole: Record<Role, Array<{ label: string; hint: string; to: string; icon: any; accent: 'ink' | 'ember' | 'sky' | 'amber' | 'rose' }>> = {
-  creator: [
-    { label: 'Find work',         hint: 'Browse briefs that fit your niche', to: '/creator/campaigns',    icon: Compass,   accent: 'ember' },
-    { label: 'Update your profile',hint: 'Stand out to brands',              to: '/creator/profile/edit', icon: User,      accent: 'sky' },
-    { label: 'Reconnect YouTube', hint: 'Keep your stats verified',         to: '/creator/accounts',     icon: Link2,     accent: 'rose' },
-    { label: 'Review proposals',  hint: 'Track status and withdraw',        to: '/creator/applications', icon: ListChecks,accent: 'amber' },
-  ],
-  brand: [
-    { label: 'Create a campaign', hint: 'Reach creators in your niche',     to: '/brand/campaigns/create', icon: Plus,        accent: 'ember' },
-    { label: 'Find creators',     hint: 'Search by niche, platform, audience', to: '/brand/creators',     icon: Search,      accent: 'sky' },
-    { label: 'Review proposals',  hint: 'Shortlist, accept, reject',        to: '/brand/campaigns',       icon: Megaphone,   accent: 'amber' },
-    { label: 'Edit company profile', hint: 'How creators see you',           to: '/brand/profile/edit',    icon: Building2,   accent: 'ink' },
-  ],
+const brandNav: NavItem[] = [
+  { to: '/brand/dashboard', label: 'Dashboard',     end: true },
+  { to: '/brand/creators',  label: 'Find creators' },
+  { to: '/brand/campaigns', label: 'Campaigns' },
+  { to: '/brand/profile',   label: 'Company' },
+];
+
+const creatorActions: QuickAction[] = [
+  { label: 'Find work',           hint: 'Browse briefs that fit your niche',  to: '/creator/campaigns',    icon: Compass,   accent: 'ember' },
+  { label: 'Update your profile', hint: 'Stand out to brands',                to: '/creator/profile/edit', icon: User,      accent: 'sky' },
+  { label: 'Reconnect YouTube',   hint: 'Keep your stats verified',           to: '/creator/accounts',     icon: Link2,     accent: 'rose' },
+  { label: 'Review proposals',    hint: 'Track status and withdraw',          to: '/creator/applications', icon: ListChecks, accent: 'amber' },
+];
+
+const brandActions: QuickAction[] = [
+  { label: 'Create a campaign',   hint: 'Reach creators in your niche',          to: '/brand/campaigns/create', icon: Plus,      accent: 'ember' },
+  { label: 'Find creators',       hint: 'Search by niche, platform, audience',   to: '/brand/creators',          icon: Search,    accent: 'sky' },
+  { label: 'Review proposals',    hint: 'Shortlist, accept, reject',             to: '/brand/campaigns',         icon: Megaphone, accent: 'amber' },
+  { label: 'Edit company profile',hint: 'How creators see you',                  to: '/brand/profile/edit',      icon: Building2, accent: 'ink' },
+];
+
+const quickActionsByRole: Record<Role, QuickAction[]> = {
+  creator: creatorActions,
+  brand: brandActions,
 };
 
 export default function AppShell() {
@@ -64,393 +59,417 @@ export default function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [cmdkOpen, setCmdkOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCmdkOpen((v) => !v);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   useEffect(() => {
     setSidebarOpen(false);
+    setCmdkOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
-    if (!sidebarOpen) return;
+    if (!sidebarOpen && !cmdkOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSidebarOpen(false);
+      if (e.key === 'Escape') {
+        setSidebarOpen(false);
+        setCmdkOpen(false);
+      }
     };
     window.addEventListener('keydown', onKey);
     document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
+      if (!sidebarOpen && !cmdkOpen) document.body.style.overflow = '';
     };
-  }, [sidebarOpen]);
+  }, [sidebarOpen, cmdkOpen]);
 
   if (!user) return null;
 
   const nav = user.role === 'creator' ? creatorNav : brandNav;
   const quickActions = quickActionsByRole[user.role];
+  const primaryAction = user.role === 'brand'
+    ? { to: '/brand/campaigns/create', label: 'New campaign', icon: Plus }
+    : { to: '/creator/campaigns', label: 'Find work', icon: Compass };
 
   return (
-    <div className="min-h-screen bg-paper-100/40">
-      <header className="sticky top-0 z-30 bg-paper-50/90 backdrop-blur-md border-b border-ink-200">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center gap-2 sm:gap-4">
+    <div className="min-h-screen bg-paper-100 flex flex-col">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:bg-ink-900 focus:text-paper-50 focus:px-3 focus:py-2 focus:rounded-sm focus:text-sm focus:font-semibold"
+      >
+        Skip to main content
+      </a>
+
+      <header className="sticky top-0 z-30 bg-paper-50/95 backdrop-blur-md border-b border-ink-200">
+        <div className="container-page h-16 flex items-center gap-3 sm:gap-6">
           <button
-            className="lg:hidden p-2 -ml-2 text-ink-700 rounded-md hover:bg-ink-100/60"
-            onClick={() => setSidebarOpen((o) => !o)}
-            aria-label="Toggle navigation"
+            className="lg:hidden -ml-1 inline-flex items-center justify-center w-10 h-10 text-ink-700 rounded-md hover:bg-ink-100/60"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open navigation"
           >
-            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            <Menu className="w-5 h-5" />
           </button>
 
-          <Link
-            to={user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard'}
-            className="flex items-center gap-2 shrink-0"
-            aria-label="Microwork home"
-          >
-            <span className="inline-flex items-center justify-center w-7 h-7 bg-ink-900 text-paper-50 rounded-sm">
-              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" aria-hidden>
-                <path
-                  d="M3 19V5h2.5L12 14 18.5 5H21v14h-2.5V10.6L13 18h-2L5 10.6V19H3z"
-                  fill="currentColor"
-                />
-              </svg>
-            </span>
-            <span className="font-display text-[17px] font-semibold leading-none tracking-[-0.02em] text-ink-900 hidden sm:inline">
-              Microwork
-            </span>
-          </Link>
-
-          <div className="hidden md:flex flex-1 max-w-md ml-4">
-            <GlobalSearch role={user.role} />
-          </div>
-          <div className="flex-1 md:hidden" />
-
-          <div className="flex items-center gap-1 sm:gap-2">
-            <div className="hidden sm:block">
-              <QuickActionsButton actions={quickActions} />
-            </div>
-            <NotificationBell />
-            <UserMenu onLogout={() => { logout(); navigate('/'); }} />
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex gap-6 py-5 sm:py-6">
-        {/* Sidebar — desktop */}
-        <aside className="hidden lg:block w-60 shrink-0">
-          <div className="sticky top-[88px] card p-2">
-            <div className="px-3 py-2 mb-1.5 flex items-center justify-between">
-              <span className="eyebrow">{user.role === 'creator' ? 'Creator' : 'Brand'}</span>
-              <span className="font-mono text-[10px] text-ink-400">v0.2</span>
-            </div>
-            <nav className="flex flex-col">
-              {nav.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.end}
-                  className={({ isActive }) =>
-                    clsx('nav-item group', isActive && 'nav-item-active')
-                  }
-                >
-                  <item.icon className="w-4 h-4 text-ink-500 group-[.nav-item-active]:text-ink-900" />
-                  <span className="truncate">{item.label}</span>
-                </NavLink>
-              ))}
-            </nav>
-            <div className="my-2 border-t border-ink-200/70" />
-            <Link
-              to="/"
-              className="nav-item"
-            >
-              <LogOut className="w-4 h-4 text-ink-500" />
-              <span>Switch demo role</span>
-            </Link>
-          </div>
-        </aside>
-
-        {/* Mobile drawer */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 z-30 bg-ink-900/40 anim-fade-in lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-            aria-hidden
-          />
-        )}
-        <aside
-          className={clsx(
-            'fixed lg:hidden inset-y-0 left-0 z-40 w-72 bg-paper-50 border-r border-ink-200',
-            'transform transition-transform duration-300 ease-out-quint',
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full',
-          )}
-          aria-label="Primary"
-        >
-          <div className="h-16 flex items-center justify-between px-4 border-b border-ink-200">
+          <div className="flex items-center gap-3 min-w-0 shrink-0">
             <Link
               to={user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard'}
-              onClick={() => setSidebarOpen(false)}
-              className="flex items-center gap-2"
+              aria-label="Microwork home"
+              className="inline-flex"
             >
-              <span className="inline-flex items-center justify-center w-7 h-7 bg-ink-900 text-paper-50 rounded-sm">
-                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" aria-hidden>
-                  <path d="M3 19V5h2.5L12 14 18.5 5H21v14h-2.5V10.6L13 18h-2L5 10.6V19H3z" fill="currentColor" />
-                </svg>
-              </span>
-              <span className="font-display text-[17px] font-semibold tracking-[-0.02em] text-ink-900">
-                Microwork
-              </span>
+              <Wordmark size="md" />
             </Link>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              aria-label="Close navigation"
-              className="p-2 -mr-2 text-ink-700 rounded-md hover:bg-ink-100/60"
+            <span
+              aria-hidden
+              className="hidden sm:inline-block font-mono text-[10px] uppercase tracking-[0.18em] px-1.5 py-0.5 rounded-sm bg-paper-100 text-ink-500"
             >
-              <X className="w-5 h-5" />
-            </button>
+              {user.role}
+            </span>
           </div>
-          <div className="p-3 overflow-y-auto h-[calc(100vh-64px)]">
-            <div className="px-3 py-2 mb-1.5 flex items-center justify-between">
-              <span className="eyebrow">{user.role === 'creator' ? 'Creator' : 'Brand'}</span>
-            </div>
-            <nav className="flex flex-col">
+
+          <nav aria-label="Primary" className="hidden lg:flex flex-1 items-center justify-center min-w-0">
+            <ul className="flex items-center gap-1 text-sm text-ink-700">
               {nav.map((item) => (
+                <li key={item.to}>
+                  <NavLink
+                    to={item.to}
+                    end={item.end}
+                    className={({ isActive }) =>
+                      clsx(
+                        'inline-flex items-center px-3 py-2 rounded-md font-medium transition-colors',
+                        isActive ? 'bg-ink-100 text-ink-900' : 'hover:text-ink-900 hover:bg-paper-100',
+                      )
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <button
+              onClick={() => setCmdkOpen(true)}
+              aria-label="Search"
+              className="lg:hidden inline-flex items-center justify-center w-10 h-10 text-ink-700 rounded-md hover:bg-ink-100/60"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+
+            <button
+              onClick={() => setCmdkOpen(true)}
+              className="hidden lg:inline-flex items-center justify-center w-9 h-9 text-ink-500 hover:text-ink-900 hover:bg-paper-100 rounded-md transition-colors"
+              aria-label="Open command palette"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+
+            <Link
+              to="/"
+              aria-label="Home"
+              className="hidden sm:inline-flex items-center justify-center gap-1.5 h-9 px-2.5 text-xs text-ink-500 hover:text-ink-900 hover:bg-paper-100 font-medium rounded-md transition-colors"
+            >
+              <Home className="w-3.5 h-3.5" />
+              <span className="hidden xl:inline">Home</span>
+            </Link>
+
+            <NotificationBell />
+            <UserMenu
+              name={user.fullName}
+              email={user.email}
+              role={user.role}
+              onLogout={() => { logout(); navigate('/'); }}
+            />
+          </div>
+        </div>
+
+        <div
+          className={clsx(
+            'lg:hidden overflow-hidden border-t border-ink-200 bg-paper-50 transition-all duration-300 ease-out-quint',
+            sidebarOpen ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0 pointer-events-none',
+          )}
+          aria-hidden={!sidebarOpen}
+        >
+          <ul className="container-page py-2 flex flex-col text-sm text-ink-700">
+            {nav.map((item) => (
+              <li key={item.to}>
                 <NavLink
-                  key={item.to}
                   to={item.to}
                   end={item.end}
                   onClick={() => setSidebarOpen(false)}
                   className={({ isActive }) =>
-                    clsx('nav-item group', isActive && 'nav-item-active')
+                    clsx(
+                      'block py-3 border-b border-ink-200/60 last:border-b-0 font-medium',
+                      isActive ? 'text-ink-900' : 'hover:text-ink-900',
+                    )
                   }
                 >
-                  <item.icon className="w-4 h-4 text-ink-500 group-[.nav-item-active]:text-ink-900" />
-                  <span className="truncate">{item.label}</span>
+                  {item.label}
                 </NavLink>
-              ))}
-            </nav>
-            <div className="my-2 border-t border-ink-200" />
-            <Link to="/" onClick={() => setSidebarOpen(false)} className="nav-item">
-              <LogOut className="w-4 h-4 text-ink-500" />
-              <span>Switch demo role</span>
-            </Link>
-            <div className="mt-4 pt-3 border-t border-ink-200">
-              <div className="px-3 mb-2 eyebrow">Quick actions</div>
-              <div className="flex flex-col">
-                {quickActions.map((a) => (
-                  <Link
-                    key={a.to}
-                    to={a.to}
-                    onClick={() => setSidebarOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm hover:bg-paper-100"
-                  >
-                    <span className={clsx(
-                      'w-7 h-7 rounded-md flex items-center justify-center shrink-0',
-                      a.accent === 'ember' ? 'bg-ember-50 text-ember-700'
-                      : a.accent === 'sky' ? 'bg-sky-50 text-sky-700'
-                      : a.accent === 'amber' ? 'bg-amber-50 text-amber-700'
-                      : a.accent === 'rose' ? 'bg-rose-50 text-rose-600'
-                      : 'bg-ink-100 text-ink-700'
-                    )}>
-                      <a.icon className="w-3.5 h-3.5" />
-                    </span>
-                    <span className="text-ink-700 font-semibold truncate">{a.label}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <main key={location.pathname} className="flex-1 min-w-0 anim-page-in">
-          <Outlet />
-        </main>
-      </div>
-    </div>
-  );
-}
-
-function GlobalSearch({ role }: { role: 'creator' | 'brand' }) {
-  const navigate = useNavigate();
-  const [q, setQ] = useState('');
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        const target = role === 'creator' ? '/creator/campaigns' : '/brand/creators';
-        navigate(`${target}?q=${encodeURIComponent(q)}`);
-      }}
-      className="w-full"
-    >
-      <label className="sr-only" htmlFor="global-search">Search</label>
-      <div className="relative group">
-        <Search className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2 transition-colors group-focus-within:text-ink-900" />
-        <input
-          id="global-search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={role === 'creator' ? 'Search campaigns' : 'Search creators'}
-          className="input pl-9 pr-12 h-10"
-        />
-        <kbd className="hidden lg:inline-flex items-center gap-1 absolute right-2 top-1/2 -translate-y-1/2 font-mono text-[10px] text-ink-400 border border-ink-200 rounded-sm px-1.5 h-6">
-          <Command className="w-3 h-3" />K
-        </kbd>
-      </div>
-    </form>
-  );
-}
-
-function QuickActionsButton({
-  actions,
-}: {
-  actions: Array<{ label: string; hint: string; to: string; icon: any; accent: 'ink' | 'ember' | 'sky' | 'amber' | 'rose' }>;
-}) {
-  const { open, setOpen, mounted } = useAnimatedOpen(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const close = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
-  }, [setOpen]);
-
-  return (
-    <div ref={ref} className="relative hidden sm:block">
-      <button
-        onClick={() => setOpen(!open)}
-        className={clsx(
-          'btn btn-secondary btn-sm transition-all',
-          open && 'bg-ink-50 border-ink-300'
-        )}
-        aria-expanded={open}
-        aria-haspopup="menu"
-      >
-        <Plus className="w-4 h-4" />
-        Quick actions
-        <ChevronDown className={clsx('w-3.5 h-3.5 transition-transform duration-200', open && 'rotate-180')} />
-      </button>
-
-      {mounted && (
-        <div
-          role="menu"
-          className={clsx(
-            'absolute right-0 mt-2 w-80 bg-paper-50 border border-ink-200 rounded-[14px] shadow-pop overflow-hidden z-50',
-            open ? 'anim-pop-in' : 'anim-pop-out pointer-events-none'
-          )}
-          style={{ transformOrigin: 'top right' }}
-        >
-          <div className="px-4 py-3 border-b border-ink-200">
-            <div className="eyebrow">Quick actions</div>
-            <div className="text-xs text-ink-500 mt-0.5">Jump straight to the next thing</div>
-          </div>
-          <ul className="max-h-80 overflow-y-auto p-2">
-            {actions.map((a) => (
-              <li key={a.to}>
-                <Link
-                  to={a.to}
-                  onClick={() => setOpen(false)}
-                  role="menuitem"
-                  className="group flex items-center gap-3 px-2 py-2.5 rounded-md hover:bg-paper-100 transition-colors"
-                >
-                  <span className={clsx(
-                    'w-9 h-9 rounded-md flex items-center justify-center shrink-0 transition-transform group-hover:scale-105',
-                    a.accent === 'ember' ? 'bg-ember-50 text-ember-700'
-                    : a.accent === 'sky' ? 'bg-sky-50 text-sky-700'
-                    : a.accent === 'amber' ? 'bg-amber-50 text-amber-700'
-                    : a.accent === 'rose' ? 'bg-rose-50 text-rose-600'
-                    : 'bg-ink-100 text-ink-700'
-                  )}>
-                    <a.icon className="w-4 h-4" />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-ink-900 truncate">{a.label}</div>
-                    <div className="text-xs text-ink-500 truncate">{a.hint}</div>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-ink-300 group-hover:text-ember-600 group-hover:translate-x-0.5 transition-all" />
-                </Link>
               </li>
             ))}
           </ul>
         </div>
-      )}
+      </header>
+
+      <main key={location.pathname} id="main" className="flex-1 min-w-0 anim-page-in pb-24 md:pb-0 bg-paper-50">
+        <Outlet />
+      </main>
+
+      <MobileDrawer
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        nav={nav}
+        primaryAction={primaryAction}
+        role={user.role}
+        onLogout={() => { logout(); navigate('/'); }}
+      />
+
+      <MobileBottomBar primaryAction={primaryAction} onMenu={() => setSidebarOpen(true)} />
+
+      <CommandPalette
+        open={cmdkOpen}
+        onClose={() => setCmdkOpen(false)}
+        role={user.role}
+        nav={nav.map((n) => ({ ...n, icon: Link2 }))}
+        quickActions={quickActions}
+      />
     </div>
   );
 }
 
-function UserMenu({ onLogout }: { onLogout: () => void }) {
-  const { user } = useAuth();
-  const { open, setOpen, mounted } = useAnimatedOpen(false);
-  const ref = useRef<HTMLDivElement>(null);
+function MobileDrawer({
+  open, onClose, nav, primaryAction, role, onLogout,
+}: {
+  open: boolean;
+  onClose: () => void;
+  nav: NavItem[];
+  primaryAction: { to: string; label: string; icon: any };
+  role: Role;
+  onLogout: () => void;
+}) {
+  return (
+    <>
+      <div
+        onClick={onClose}
+        aria-hidden
+        className={clsx(
+          'fixed inset-0 z-40 bg-ink-900/40 transition-opacity duration-300 ease-out-quint md:hidden',
+          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+        )}
+      />
+      <aside
+        className={clsx(
+          'fixed md:hidden inset-y-0 left-0 z-50 w-72 bg-paper-50 border-r border-ink-200 transform transition-transform duration-300 ease-out-quint flex flex-col',
+          open ? 'translate-x-0' : '-translate-x-full',
+        )}
+        aria-label="Primary mobile"
+        aria-hidden={!open}
+      >
+        <div className="h-16 flex items-center justify-between px-4 border-b border-ink-200 shrink-0">
+          <Link
+            to={role === 'creator' ? '/creator/dashboard' : '/brand/dashboard'}
+            onClick={onClose}
+            className="flex items-center gap-2"
+          >
+            <Mark size="md" />
+            <span className="font-display text-[20px] font-semibold tracking-[-0.035em] text-ink-900">
+              Micro<span className="text-ember-600 italic font-medium">·</span>work
+            </span>
+          </Link>
+          <button
+            onClick={onClose}
+            aria-label="Close navigation"
+            className="p-2 -mr-2 text-ink-700 rounded-md hover:bg-ink-100/60"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-3">
+          <Link to={primaryAction.to} onClick={onClose} className="btn btn-primary btn-md w-full mb-3">
+            <primaryAction.icon className="w-4 h-4" /> {primaryAction.label}
+          </Link>
+          <nav className="flex flex-col" aria-label="Primary mobile drawer">
+            {nav.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                onClick={onClose}
+                className={({ isActive }) => clsx('nav-item group', isActive && 'nav-item-active')}
+              >
+                <span className="truncate">{item.label}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+        <div className="border-t border-ink-200 p-3 shrink-0">
+          <button onClick={() => { onClose(); onLogout(); }} className="nav-item w-full">
+            <LogOut className="w-4 h-4 text-ink-500" />
+            <span>Switch demo role</span>
+          </button>
+          <p className="eyebrow text-ink-400 mt-2 px-3">Demo data · localStorage</p>
+        </div>
+      </aside>
+    </>
+  );
+}
+
+function MobileBottomBar({
+  primaryAction, onMenu,
+}: {
+  primaryAction: { to: string; label: string; icon: any };
+  onMenu: () => void;
+}) {
+  return (
+    <div className="md:hidden fixed bottom-0 inset-x-0 z-30 pointer-events-none">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 pb-3 sm:pb-4 safe-bottom">
+        <div className="flex items-center gap-2 pointer-events-auto">
+          <button
+            onClick={onMenu}
+            className="inline-flex items-center justify-center gap-1.5 h-12 px-3 bg-paper-50 border border-ink-200 rounded-md text-ink-900 font-semibold text-sm shadow-card"
+            aria-label="Open navigation"
+          >
+            <Menu className="w-4 h-4" />
+            Menu
+          </button>
+          <Link to={primaryAction.to} className="btn btn-primary btn-lg flex-1 shadow-pop">
+            <primaryAction.icon className="w-4 h-4" />
+            {primaryAction.label}
+            <ArrowUpRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CommandPalette({
+  open, onClose, role, nav, quickActions,
+}: {
+  open: boolean;
+  onClose: () => void;
+  role: Role;
+  nav: Array<{ to: string; label: string; icon: any; end?: boolean }>;
+  quickActions: Array<{ label: string; to: string; icon: any; accent: Accent }>;
+}) {
+  const navigate = useNavigate();
+  const [q, setQ] = useState('');
+  const [cursor, setCursor] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const close = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
-  }, [setOpen]);
+    if (open) {
+      setQ('');
+      setCursor(0);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [open]);
 
-  if (!user) return null;
+  const items = useMemo(() => {
+    const all = [
+      ...nav.map((n) => ({ type: 'Page' as const, label: n.label, to: n.to, icon: n.icon })),
+      ...quickActions.map((a) => ({ type: 'Action' as const, label: a.label, to: a.to, icon: a.icon })),
+      { type: 'External' as const, label: 'Landing page', to: '/', icon: Home },
+      { type: 'External' as const, label: 'Switch demo role', to: '/', icon: LogOut },
+    ];
+    if (!q) return all;
+    const k = q.toLowerCase();
+    return all.filter((i) => i.label.toLowerCase().includes(k));
+  }, [q, nav, quickActions]);
+
+  useEffect(() => { setCursor(0); }, [q]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); setCursor((c) => Math.min(items.length - 1, c + 1)); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setCursor((c) => Math.max(0, c - 1)); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        const item = items[cursor];
+        if (item) { onClose(); navigate(item.to); }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, items, cursor, navigate, onClose]);
+
+  useEffect(() => {
+    if (!listRef.current) return;
+    const el = listRef.current.querySelector<HTMLElement>(`[data-cursor="${cursor}"]`);
+    if (el) el.scrollIntoView({ block: 'nearest' });
+  }, [cursor]);
+
+  if (!open) return null;
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 p-1 rounded-md hover:bg-ink-100/60 transition-colors"
-        aria-expanded={open}
-        aria-label="User menu"
+    <div
+      className="fixed inset-0 z-[60] flex items-start justify-center pt-[10vh] px-3 bg-ink-900/40 anim-fade-in"
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      role="dialog"
+      aria-label="Command palette"
+      aria-modal="true"
+    >
+      <div
+        className="w-full max-w-xl bg-paper-50 border border-ink-200 rounded-[16px] shadow-pop overflow-hidden"
+        style={{ transformOrigin: 'top center' }}
       >
-        <Avatar name={user.fullName} size="sm" tone="ink" />
-        <ChevronDown className={clsx('w-3.5 h-3.5 text-ink-500 transition-transform duration-200 hidden sm:block', open && 'rotate-180')} />
-      </button>
-      {mounted && (
-        <div
-          className={clsx(
-            'absolute right-0 mt-2 w-64 bg-paper-50 border border-ink-200 rounded-[14px] shadow-pop overflow-hidden z-50',
-            open ? 'anim-pop-in' : 'anim-pop-out pointer-events-none'
-          )}
-          style={{ transformOrigin: 'top right' }}
-        >
-          <div className="px-4 py-3 border-b border-ink-200">
-            <div className="flex items-center gap-2.5">
-              <Avatar name={user.fullName} size="sm" tone="ink" />
-              <div className="min-w-0">
-                <div className="text-sm font-semibold text-ink-900 truncate">{user.fullName}</div>
-                <div className="text-xs text-ink-500 truncate">{user.email}</div>
-              </div>
-            </div>
-          </div>
-          <ul className="p-1.5">
-            <li>
-              <Link
-                to={user.role === 'creator' ? '/creator/profile' : '/brand/profile'}
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-paper-100 text-ink-700 transition-colors"
-              >
-                <User className="w-4 h-4" /> View profile
-              </Link>
-            </li>
-            <li>
-              <Link
-                to={user.role === 'creator' ? '/creator/notifications' : '/brand/notifications'}
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-paper-100 text-ink-700 transition-colors"
-              >
-                <Bell className="w-4 h-4" /> Notifications
-              </Link>
-            </li>
-          </ul>
-          <div className="border-t border-ink-200 p-1.5">
-            <button
-              onClick={() => {
-                setOpen(false);
-                onLogout();
-              }}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-paper-100 text-ink-700 transition-colors"
-            >
-              <LogOut className="w-4 h-4" /> Switch demo role
-            </button>
-          </div>
+        <div className="flex items-center gap-3 px-4 h-14 border-b border-ink-200">
+          <Search className="w-4 h-4 text-ink-500" />
+          <input
+            ref={inputRef}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={role === 'creator' ? 'Search actions, pages…' : 'Search campaigns, creators…'}
+            className="flex-1 bg-transparent outline-none text-[15px] text-ink-900 placeholder:text-ink-400"
+          />
+          <kbd className="font-mono text-[10px] text-ink-500 border border-ink-200 rounded-sm px-1.5 h-6 inline-flex items-center">ESC</kbd>
         </div>
-      )}
+        <div ref={listRef} className="max-h-[60vh] overflow-y-auto p-1.5">
+          {items.length === 0 ? (
+            <div className="px-4 py-10 text-center text-sm text-ink-500">No matches for &ldquo;{q}&rdquo;</div>
+          ) : (
+            items.map((item, i) => (
+              <button
+                key={`${item.type}-${item.label}-${i}`}
+                data-cursor={i}
+                onClick={() => { onClose(); navigate(item.to); }}
+                onMouseEnter={() => setCursor(i)}
+                className={clsx(
+                  'w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors',
+                  i === cursor ? 'bg-ink-100 text-ink-900' : 'text-ink-700 hover:bg-paper-100',
+                )}
+              >
+                <span className={clsx(
+                  'w-7 h-7 rounded-sm flex items-center justify-center shrink-0',
+                  i === cursor ? 'bg-ink-900 text-paper-50' : 'bg-paper-100 text-ink-700',
+                )}>
+                  <item.icon className="w-3.5 h-3.5" />
+                </span>
+                <span className="flex-1 truncate font-semibold">{item.label}</span>
+                <span className="eyebrow text-ink-400">{item.type}</span>
+                {i === cursor && <ArrowRight className="w-3.5 h-3.5 text-ink-500" />}
+              </button>
+            ))
+          )}
+        </div>
+        <div className="border-t border-ink-200 px-4 py-2.5 flex items-center justify-between text-[11px] text-ink-500 font-mono">
+          <span>↑ ↓ navigate · ↵ open</span>
+          <span>{items.length} result{items.length === 1 ? '' : 's'}</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -476,12 +495,12 @@ function NotificationBell() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="relative p-2 rounded-md hover:bg-ink-100/60 text-ink-700 transition-colors"
+        className="relative inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 text-ink-700 rounded-md hover:bg-ink-100/60 transition-colors"
         aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`}
       >
         <Bell className="w-5 h-5" />
         {unread > 0 && (
-          <span className="absolute top-0.5 right-0.5 bg-ember-500 text-paper-50 text-[10px] font-semibold rounded-sm min-w-[18px] h-[18px] flex items-center justify-center px-1">
+          <span className="absolute top-1 right-1 bg-ember-500 text-paper-50 text-[10px] font-semibold rounded-sm min-w-[18px] h-[18px] flex items-center justify-center px-1">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
@@ -490,7 +509,7 @@ function NotificationBell() {
         <div
           className={clsx(
             'absolute right-0 mt-2 w-[min(92vw,24rem)] sm:w-96 bg-paper-50 border border-ink-200 rounded-[14px] shadow-pop overflow-hidden z-50',
-            open ? 'anim-pop-in' : 'anim-pop-out pointer-events-none'
+            open ? 'anim-pop-in' : 'anim-pop-out pointer-events-none',
           )}
           style={{ transformOrigin: 'top right' }}
         >
@@ -511,7 +530,7 @@ function NotificationBell() {
             {notifications.length === 0 ? (
               <div className="p-8 text-center text-sm text-ink-500">
                 <CheckCircle2 className="w-6 h-6 mx-auto mb-2 text-ink-300" />
-                You’re all caught up.
+                You&rsquo;re all caught up.
               </div>
             ) : (
               <ul>
@@ -522,7 +541,7 @@ function NotificationBell() {
                       onClick={() => {
                         markNotificationRead(n.id);
                         setOpen(false);
-                        if (n.link) navigate(n.link);
+                        if (n.link) window.location.assign(n.link);
                       }}
                     />
                   </li>
@@ -543,10 +562,6 @@ function NotificationBell() {
       )}
     </div>
   );
-
-  function navigate(url: string) {
-    window.location.assign(url);
-  }
 }
 
 function NotificationRow({ n, onClick }: { n: AppNotification; onClick: () => void }) {
@@ -562,10 +577,102 @@ function NotificationRow({ n, onClick }: { n: AppNotification; onClick: () => vo
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-ink-900 truncate">{n.title}</div>
         <div className="text-xs text-ink-500 line-clamp-2 mt-0.5">{n.description}</div>
-        <div className="text-[11px] text-ink-400 mt-1 font-mono uppercase tracking-[0.12em]">{fmtRelativeTime(n.createdAt)}</div>
+        <div className="text-[11px] text-ink-400 mt-1 font-mono uppercase tracking-[0.12em]">
+          {fmtRelativeTime(n.createdAt)}
+        </div>
       </div>
     </button>
   );
 }
 
-export { Filter };
+function UserMenu({
+  name, email, role, onLogout,
+}: {
+  name: string;
+  email: string;
+  role: Role;
+  onLogout: () => void;
+}) {
+  const { open, setOpen, mounted } = useAnimatedOpen(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [setOpen]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 p-1 rounded-md hover:bg-ink-100/60 transition-colors"
+        aria-expanded={open}
+        aria-label="User menu"
+      >
+        <Avatar name={name} size="sm" tone="ink" />
+        <ChevronDown
+          className={clsx('w-3.5 h-3.5 text-ink-500 transition-transform duration-200 hidden sm:block', open && 'rotate-180')}
+        />
+      </button>
+      {mounted && (
+        <div
+          className={clsx(
+            'absolute right-0 mt-2 w-64 bg-paper-50 border border-ink-200 rounded-[14px] shadow-pop overflow-hidden z-50',
+            open ? 'anim-pop-in' : 'anim-pop-out pointer-events-none',
+          )}
+          style={{ transformOrigin: 'top right' }}
+        >
+          <div className="px-4 py-3 border-b border-ink-200">
+            <div className="flex items-center gap-2.5">
+              <Avatar name={name} size="sm" tone="ink" />
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-ink-900 truncate">{name}</div>
+                <div className="text-xs text-ink-500 truncate">{email}</div>
+              </div>
+            </div>
+          </div>
+          <ul className="p-1.5">
+            <li>
+              <Link
+                to={role === 'creator' ? '/creator/profile' : '/brand/profile'}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-paper-100 text-ink-700 transition-colors"
+              >
+                <User className="w-4 h-4" /> View profile
+              </Link>
+            </li>
+            <li>
+              <Link
+                to={role === 'creator' ? '/creator/notifications' : '/brand/notifications'}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-paper-100 text-ink-700 transition-colors"
+              >
+                <Bell className="w-4 h-4" /> Notifications
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-paper-100 text-ink-700 transition-colors"
+              >
+                <Home className="w-4 h-4" /> View home
+              </Link>
+            </li>
+          </ul>
+          <div className="border-t border-ink-200 p-1.5">
+            <button
+              onClick={() => { setOpen(false); onLogout(); }}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-paper-100 text-ink-700 transition-colors"
+            >
+              <LogOut className="w-4 h-4" /> Switch demo role
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -28,20 +28,24 @@ export default function EditCampaign() {
 
   if (!c || !values) {
     return (
-      <div className="card p-6 max-w-xl">
-        <h1 className="font-display text-lg text-ink-900">Campaign not found</h1>
-        <p className="text-sm text-ink-500 mt-1">It may have been deleted.</p>
-        <Button className="mt-4" onClick={() => navigate('/brand/campaigns')}>Back to campaigns</Button>
+      <div className="container-page py-6 sm:py-8">
+        <div className="card p-6 max-w-xl">
+          <h1 className="font-display text-lg text-ink-900">Campaign not found</h1>
+          <p className="text-sm text-ink-500 mt-1">It may have been deleted.</p>
+          <Button className="mt-4" onClick={() => navigate('/brand/campaigns')}>Back to campaigns</Button>
+        </div>
       </div>
     );
   }
 
   if (c.status !== 'draft') {
     return (
-      <div className="card p-6 max-w-xl">
-        <h1 className="font-display text-lg text-ink-900">Editing is locked</h1>
-        <p className="text-sm text-ink-500 mt-1">Published and closed campaigns can’t be edited.</p>
-        <Button className="mt-4" onClick={() => navigate(`/brand/campaigns/${c.id}`)}>Back to campaign</Button>
+      <div className="container-page py-6 sm:py-8">
+        <div className="card p-6 max-w-xl">
+          <h1 className="font-display text-lg text-ink-900">Editing is locked</h1>
+          <p className="text-sm text-ink-500 mt-1">Published and closed campaigns can’t be edited.</p>
+          <Button className="mt-4" onClick={() => navigate(`/brand/campaigns/${c.id}`)}>Back to campaign</Button>
+        </div>
       </div>
     );
   }
@@ -59,16 +63,16 @@ export default function EditCampaign() {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="container-page py-6 sm:py-8 space-y-6 max-w-3xl">
       <PageHeader
         eyebrow="Edit"
         title="Edit campaign"
         description="Changes apply to this draft. You can publish it when ready."
       />
       <CampaignForm values={values} onChange={setValues} errors={errors} />
-      <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
-        <Button variant="ghost" onClick={() => navigate('/brand/campaigns')}>Cancel</Button>
-        <Button onClick={save}>Save changes</Button>
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+        <Button variant="ghost" onClick={() => navigate('/brand/campaigns')} className="w-full sm:w-auto">Cancel</Button>
+        <Button onClick={save} className="w-full sm:w-auto">Save changes</Button>
       </div>
     </div>
   );

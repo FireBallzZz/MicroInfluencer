@@ -46,17 +46,17 @@ export default function CreateCampaign() {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="container-page py-6 sm:py-8 space-y-6 max-w-3xl">
       <PageHeader
         eyebrow="New"
         title="Create a campaign"
         description="Save as a draft to keep editing, or publish to start receiving proposals."
       />
       <CampaignForm values={values} onChange={setValues} errors={errors} />
-      <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
-        <Button variant="ghost" onClick={() => navigate('/brand/campaigns')}>Cancel</Button>
-        <Button variant="secondary" onClick={() => handle('draft')}>Save draft</Button>
-        <Button onClick={() => handle('publish')}>Publish</Button>
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+        <Button variant="ghost" onClick={() => navigate('/brand/campaigns')} className="w-full sm:w-auto">Cancel</Button>
+        <Button variant="secondary" onClick={() => handle('draft')} className="w-full sm:w-auto">Save draft</Button>
+        <Button onClick={() => handle('publish')} className="w-full sm:w-auto">Publish</Button>
       </div>
     </div>
   );
