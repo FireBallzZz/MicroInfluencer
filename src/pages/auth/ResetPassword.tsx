@@ -30,7 +30,7 @@ export default function ResetPassword() {
     <AuthShell
       title="Microwork"
       subtitle="Choose a new password — at least 8 characters, easy for you to remember."
-      footer={<><Link to="/login" className="text-brand-600 hover:underline">Back to log in</Link></>}
+      footer={<><Link to="/login" className="text-ember-600 hover:text-ember-700 font-semibold">Back to log in</Link></>}
     >
       <form onSubmit={submit} noValidate>
         <FormField label="New password" error={errors.pw}>

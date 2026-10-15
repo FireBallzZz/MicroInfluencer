@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CampaignForm, CampaignFormValues, validateCampaign } from './CampaignForm';
 import { addCampaign, updateCampaign, useStore } from '../../state/Store';
-import { Button } from '../../components/ui';
+import { Button, PageHeader } from '../../components/ui';
 import { useToast } from '../../state/ToastContext';
 
 const blank: CampaignFormValues = {
@@ -46,13 +46,15 @@ export default function CreateCampaign() {
   };
 
   return (
-    <div className="space-y-5 max-w-3xl">
-      <div>
-        <h1 className="text-2xl font-bold text-ink-900">Create a campaign</h1>
-        <p className="text-sm text-ink-500">Save as a draft to keep editing, or publish to start receiving proposals.</p>
-      </div>
+    <div className="space-y-6 max-w-3xl">
+      <PageHeader
+        eyebrow="New"
+        title="Create a campaign"
+        description="Save as a draft to keep editing, or publish to start receiving proposals."
+      />
       <CampaignForm values={values} onChange={setValues} errors={errors} />
-      <div className="flex justify-end gap-2">
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
+        <Button variant="ghost" onClick={() => navigate('/brand/campaigns')}>Cancel</Button>
         <Button variant="secondary" onClick={() => handle('draft')}>Save draft</Button>
         <Button onClick={() => handle('publish')}>Publish</Button>
       </div>

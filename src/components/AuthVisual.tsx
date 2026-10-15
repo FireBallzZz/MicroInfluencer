@@ -7,13 +7,17 @@ import {
   Check,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { discoverableCreators, fmtNumber } from '../data/seed';
+import { ChannelArt, PlatformIcon } from './ui';
 
 type Variant = 'neutral' | 'creator' | 'brand';
 
 /**
- * AuthVisual — replaces the generic "mesh + glass cards" pattern with an
- * editorial ink panel: a single content card (role-specific sample) plus a
- * live activity list. No floating decorative cards, no blurred blobs.
+ * AuthVisual — editorial ink panel shown next to auth forms.
+ * Replaces the "floating glass cards" pattern with:
+ *   1. A role-specific editorial card (real demo creator / real demo brief)
+ *   2. A live, deterministic activity feed
+ *   3. A 3-up key-value strip
  */
 export default function AuthVisual({ variant = 'neutral' }: { variant?: Variant }) {
   return (
@@ -25,9 +29,7 @@ export default function AuthVisual({ variant = 'neutral' }: { variant?: Variant 
             {variant === 'creator' ? 'For creators' : variant === 'brand' ? 'For brands' : 'The platform'}
           </span>
         </div>
-        <span className="font-mono text-[11px] text-ink-400">
-          v0.1 · 2026
-        </span>
+        <span className="font-mono text-[11px] text-ink-400">v0.2 · 2026</span>
       </div>
 
       {variant === 'creator' && <CreatorEditorial />}
@@ -38,12 +40,12 @@ export default function AuthVisual({ variant = 'neutral' }: { variant?: Variant 
 
       <div className="grid grid-cols-3 gap-px bg-ink-700/70 border border-ink-700/70">
         {variant === 'creator'
-          ? [['38.4K', 'Subscribers'], ['4.8%', 'Engagement'], ['92%', 'Reply rate']]
+          ? [['10K–100K', 'Typical demo range'], ['4–8%', 'Engagement'], ['60s', 'To set up']]
               .map(([v, l]) => <Kv key={l} value={v} label={l} />)
           : variant === 'brand'
-            ? [['2.4k+', 'Demo brands'], ['312', 'Active briefs'], ['3.2x', 'Median ROI']]
+            ? [[String(discoverableCreators.length), 'Demo creators'], ['3 min', 'To post a brief'], ['1', 'Status flow']]
                 .map(([v, l]) => <Kv key={l} value={v} label={l} />)
-            : [['10k+', 'Creators'], ['2.4k+', 'Brands'], ['94%', 'Filled in 7d']]
+            : [[String(discoverableCreators.length), 'Demo creators'], ['3-step', 'Proposal flow'], ['0', 'Backend required']]
                 .map(([v, l]) => <Kv key={l} value={v} label={l} />)
         }
       </div>
@@ -54,6 +56,8 @@ export default function AuthVisual({ variant = 'neutral' }: { variant?: Variant 
 /* ────────────── Editorial copy + sample UI ────────────── */
 
 function CreatorEditorial() {
+  // Pick the first demo creator for a stable, real reference.
+  const c = discoverableCreators[0];
   return (
     <div className="bg-ink-800/60 border border-ink-700 rounded-[18px] p-6 sm:p-7">
       <div className="flex items-center gap-2.5 mb-4">
@@ -61,7 +65,7 @@ function CreatorEditorial() {
           <Sparkles className="w-3 h-3" /> Creator
         </span>
         <span className="text-[11px] text-ink-400 font-mono uppercase tracking-[0.14em]">
-          Profile preview
+          From the demo pool
         </span>
       </div>
 
@@ -73,16 +77,17 @@ function CreatorEditorial() {
         engagement — appear on your profile. Brands can filter on real data.
       </p>
 
-      <div className="mt-5 flex items-center gap-3 p-3.5 bg-ink-900 border border-ink-700 rounded-sm">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-ember-500 to-ember-700 text-paper-50 flex items-center justify-center font-bold text-sm">
-          AJ
-        </div>
+      <div className="mt-5 flex items-center gap-3 p-3.5 bg-ink-900 border border-ink-700 rounded-md">
+        <ChannelArt name={c.fullName} seed={c.id} height={40} className="w-10 rounded-sm" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 text-sm font-semibold text-paper-50">
-            Avery Johnson
+            {c.fullName}
             <BadgeCheck className="w-3.5 h-3.5 text-ember-300" />
           </div>
-          <div className="text-xs text-ink-400">Lifestyle · YouTube · 38.4K</div>
+          <div className="text-xs text-ink-400 flex items-center gap-1.5">
+            <PlatformIcon platform={c.primaryPlatform} className="w-3 h-3" />
+            {c.niche} · {fmtNumber(c.followers)} followers
+          </div>
         </div>
         <ArrowUpRight className="w-4 h-4 text-ink-400" />
       </div>
@@ -163,7 +168,7 @@ function NeutralEditorial() {
   );
 }
 
-/* ────────────── Live activity feed ────────────── */
+/* ────────────── Live activity feed (sample data) ────────────── */
 
 const FEED = [
   { who: 'Northwind', on: 'Avery Johnson',  tone: 'accept',    time: '2m' },
@@ -202,7 +207,7 @@ function ActivityFeed({ variant }: { variant: Variant }) {
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-blink" />
           <span className="text-[13px] font-semibold text-paper-50">{heading}</span>
         </div>
-        <span className="font-mono text-[10px] text-ink-400">last 30m</span>
+        <span className="font-mono text-[10px] text-ink-400">sample · 30m</span>
       </div>
 
       <ul className="divide-y divide-ink-700/70">

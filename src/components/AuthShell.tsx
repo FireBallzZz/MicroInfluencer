@@ -39,6 +39,12 @@ export default function AuthShell({
             <span className="font-display text-[19px] font-semibold leading-none tracking-[-0.02em] text-ink-900">
               Microwork
             </span>
+            <span
+              aria-hidden
+              className="font-mono text-[10px] uppercase tracking-[0.18em] px-1.5 py-0.5 rounded-sm bg-paper-100 text-ink-500"
+            >
+              demo
+            </span>
           </Link>
 
           <h1 className="font-display text-ink-900 text-[clamp(1.75rem,3.2vw,2.4rem)] leading-[1.05] tracking-[-0.02em]">

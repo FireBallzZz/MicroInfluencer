@@ -1,4 +1,4 @@
-import { Youtube, AlertTriangle, RefreshCw, Unplug, CheckCircle2 } from 'lucide-react';
+import { Youtube, AlertTriangle, RefreshCw, Unplug, CheckCircle2, Globe2, Lock } from 'lucide-react';
 import { useState } from 'react';
 import {
   connectYouTube,
@@ -9,7 +9,7 @@ import {
 import { ConfirmDialog } from '../../components/Modal';
 import { useToast } from '../../state/ToastContext';
 import { fmtRelativeTime } from '../../data/seed';
-import { Button } from '../../components/ui';
+import { Button, PageHeader, SectionHeader, PlatformIcon, StatRow } from '../../components/ui';
 
 export default function ConnectedAccounts() {
   const { connectedAccounts, creator } = useStore();
@@ -18,26 +18,24 @@ export default function ConnectedAccounts() {
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
 
   return (
-    <div className="space-y-5 max-w-3xl">
-      <div>
-        <h1 className="text-2xl font-bold text-ink-900">Connected accounts</h1>
-        <p className="text-sm text-ink-500">
-          Connect YouTube to verify your stats. Other platforms are manual entry only.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Account"
+        title="Connected accounts"
+        description="Connect YouTube to verify your stats. Other platforms are manual entry only in this version."
+      />
 
-      {/* YouTube */}
       <div className="card overflow-hidden">
-        <div className="p-5 flex items-start gap-4">
-          <div className="w-12 h-12 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+        <div className="p-5 sm:p-6 flex items-start gap-4">
+          <div className="w-12 h-12 rounded-md bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
             <Youtube className="w-6 h-6" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-sm font-semibold text-ink-900">YouTube</h3>
-              <span className="badge badge-teal">Core integration</span>
+              <span className="tag tag-ember">Core integration</span>
             </div>
-            <p className="text-xs text-ink-500 mt-0.5">Official OAuth ' verified stats</p>
+            <p className="text-xs text-ink-500 mt-1">Official OAuth · verified stats</p>
           </div>
           {!yt && (
             <Button onClick={() => {
@@ -51,19 +49,23 @@ export default function ConnectedAccounts() {
           <>
             {yt.status === 'expired' && (
               <div className="bg-amber-50 border-y border-amber-200 px-5 py-3 flex items-center gap-2 text-sm text-amber-800">
-                <AlertTriangle className="w-4 h-4" />
+                <AlertTriangle className="w-4 h-4 shrink-0" />
                 Your YouTube connection expired. Reconnect to keep your stats verified.
               </div>
             )}
 
-            <div className="p-5 grid sm:grid-cols-2 gap-4">
-              <KV label="Account" value={`@${yt.handle}`} />
-              <KV label="Status" value={yt.verified ? 'Verified' : 'Unverified'} />
-              <KV label="Last synced" value={fmtRelativeTime(yt.lastSyncedAt)} />
-              <KV label="Followers" value={creator.followers.toLocaleString()} />
+            <div className="p-5 sm:p-6 border-t border-ink-200">
+              <StatRow
+                items={[
+                  { label: 'Account', value: `@${yt.handle}` },
+                  { label: 'Status', value: yt.verified ? 'Verified' : 'Unverified' },
+                  { label: 'Last synced', value: fmtRelativeTime(yt.lastSyncedAt) },
+                  { label: 'Followers', value: creator.followers.toLocaleString() },
+                ]}
+              />
             </div>
 
-            <div className="border-t border-ink-100 p-5 flex flex-wrap gap-2">
+            <div className="border-t border-ink-200 p-5 sm:p-6 flex flex-wrap gap-2">
               <Button variant="secondary" onClick={() => {
                 updateConnectedAccount(yt.id, { lastSyncedAt: new Date().toISOString(), status: 'connected' });
                 push('Stats refreshed', 'success');
@@ -83,18 +85,25 @@ export default function ConnectedAccounts() {
         )}
       </div>
 
-      {/* Other platforms (manual only) */}
-      <div className="card p-5">
-        <h3 className="text-sm font-semibold text-ink-900">Other platforms</h3>
-        <p className="text-xs text-ink-500 mt-1">Manual entry only ' these will be marked as Unverified.</p>
-        <div className="mt-4 grid sm:grid-cols-3 gap-3">
+      <div className="card p-5 sm:p-6">
+        <SectionHeader
+          eyebrow="Manual entry"
+          title="Other platforms"
+          description="OAuth for these platforms isn’t supported in this version. Enter stats on your profile (marked as Unverified)."
+        />
+        <div className="mt-5 grid sm:grid-cols-3 gap-3">
           {(['Instagram', 'TikTok', 'Facebook'] as const).map((p) => (
-            <div key={p} className="p-4 rounded-lg border border-dashed border-ink-200">
+            <div key={p} className="p-4 border border-dashed border-ink-200 rounded-md">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-ink-900 text-sm">{p}</span>
-                <span className="badge badge-amber">Unverified</span>
+                <span className="font-semibold text-ink-900 text-sm inline-flex items-center gap-1.5">
+                  <PlatformIcon platform={p as any} />
+                  {p}
+                </span>
+                <span className="tag tag-amber"><Lock className="w-3 h-3" /> Manual</span>
               </div>
-              <p className="text-xs text-ink-500 mt-1">OAuth not supported in this version. Enter stats manually on your profile.</p>
+              <p className="text-xs text-ink-500 mt-2 leading-relaxed">
+                OAuth not supported in this version. Enter stats manually on your profile.
+              </p>
             </div>
           ))}
         </div>
@@ -112,15 +121,6 @@ export default function ConnectedAccounts() {
         confirmLabel="Disconnect"
         destructive
       />
-    </div>
-  );
-}
-
-function KV({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="text-xs text-ink-500">{label}</div>
-      <div className="text-sm font-semibold text-ink-900 mt-0.5">{value}</div>
     </div>
   );
 }

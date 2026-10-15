@@ -60,7 +60,7 @@ export default function ApplicationDetail() {
             const active = statusIdx >= stepIdx && proposal.status !== 'rejected' && proposal.status !== 'withdrawn';
             return (
               <div key={step} className="flex items-center gap-2">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${active ? 'bg-brand-500 text-white' : 'bg-ink-100 text-ink-500'}`}>
+                <div className={`w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-bold ${active ? 'bg-ink-900 text-paper-50' : 'bg-ink-100 text-ink-500'}`}>
                   {i + 1}
                 </div>
                 <span className={active ? 'text-ink-900 font-medium' : 'text-ink-500'}>{step[0].toUpperCase() + step.slice(1)}</span>

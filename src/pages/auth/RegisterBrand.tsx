@@ -38,7 +38,7 @@ export default function RegisterBrand() {
     <AuthShell
       title="Microwork"
       subtitle="Sign up as a brand — find the right creators and run real campaigns."
-      footer={<>Have an account? <Link to="/login" className="text-brand-600 hover:underline">Log in</Link></>}
+      footer={<>Have an account? <Link to="/login" className="text-ember-600 hover:text-ember-700 font-semibold">Log in</Link></>}
       variant="brand"
     >
       <form onSubmit={submit} noValidate>

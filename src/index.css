@@ -22,9 +22,8 @@
   }
   ::selection { background: #1B1814; color: #FBF9F3; }
   *:focus-visible {
-    @apply outline-none ring-2 ring-ember-500/50 ring-offset-2 ring-offset-paper-50 rounded-sm;
+    @apply outline-none ring-2 ring-ember-500/40 ring-offset-2 ring-offset-paper-50;
   }
-  /* Touch sizing */
   @media (hover: none) and (pointer: coarse) {
     .btn { min-height: 44px; }
     .btn-sm { min-height: 40px; }
@@ -36,7 +35,7 @@
 @layer components {
   .container-page { @apply max-w-7xl mx-auto px-5 sm:px-8 lg:px-10; }
 
-  /* Buttons — square-ish, weighted, restrained shadow. No pills-everywhere. */
+  /* Buttons */
   .btn {
     @apply inline-flex items-center justify-center gap-2 font-semibold
            transition-all duration-200 ease-out-quint
@@ -47,10 +46,10 @@
   .btn-sm { @apply h-9 px-3.5 text-[13px]; }
   .btn-md { @apply h-11 px-5 text-sm; }
   .btn-lg { @apply h-12 px-6 text-[15px]; }
+  .btn-xs { @apply h-7 px-2.5 text-[11px] tracking-[0.04em]; }
 
   .btn-primary {
-    @apply bg-ink-900 text-paper-50
-           hover:bg-ink-800;
+    @apply bg-ink-900 text-paper-50 hover:bg-ink-800;
     box-shadow: 0 1px 0 rgba(11,10,8,.4), inset 0 1px 0 rgba(255,255,255,.06);
   }
   .btn-primary:hover {
@@ -74,9 +73,16 @@
     @apply bg-danger text-paper-50 hover:opacity-90;
   }
 
-  /* Form controls — minimal, ink-bordered, no green focus rings. */
+  /* Form controls */
   .input {
     @apply w-full h-11 px-3.5 bg-paper-50 text-ink-900 text-sm
+           border border-ink-200
+           placeholder:text-ink-400
+           focus:border-ink-900 focus:ring-0 outline-none transition-colors
+           rounded-md;
+  }
+  .input-line {
+    @apply w-full h-11 px-3.5 bg-transparent text-ink-900 text-sm
            border-b border-ink-300
            placeholder:text-ink-400
            focus:border-ink-900 focus:ring-0 outline-none transition-colors
@@ -90,13 +96,15 @@
            border border-ink-200
            placeholder:text-ink-400
            focus:border-ink-900 focus:ring-0 outline-none transition-colors
-           rounded-sm;
+           rounded-md;
   }
-  .label { @apply block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-500 mb-2; }
+  .label {
+    @apply block text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-500 mb-2;
+  }
   .helper { @apply text-xs text-ink-500 mt-1.5; }
-  .error { @apply text-xs text-danger mt-1.5; }
+  .error  { @apply text-xs text-danger mt-1.5; }
 
-  /* Surfaces — paper-tinted, not stark white. */
+  /* Surfaces */
   .card {
     @apply bg-paper-50 border border-ink-200/70;
     border-radius: 14px;
@@ -106,8 +114,9 @@
     @apply bg-ink-900 text-paper-50 border border-ink-700;
     border-radius: 14px;
   }
+  .card-pop { @apply shadow-pop; }
 
-  /* Tags — small, square, monochrome. */
+  /* Tag (editorial, square) */
   .tag {
     @apply inline-flex items-center gap-1.5 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.1em];
     border-radius: 4px;
@@ -116,13 +125,19 @@
   .tag-paper   { @apply bg-paper-100 text-ink-700 border border-ink-200/70; }
   .tag-ember   { @apply bg-ember-500 text-paper-50; }
   .tag-outline { @apply bg-transparent text-ink-700 border border-ink-300; }
+  .tag-green   { @apply bg-emerald-50 text-emerald-700; }
+  .tag-amber   { @apply bg-amber-50 text-amber-700; }
+  .tag-rose    { @apply bg-rose-50 text-rose-700; }
+  .tag-sky     { @apply bg-sky-50 text-sky-700; }
+  .tag-gray    { @apply bg-ink-100 text-ink-500; }
 
+  /* Pill (for use sparingly) */
   .pill {
     @apply inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.1em];
     border-radius: 999px;
   }
 
-  /* Headline display style — the *single* decorative element we lean on. */
+  /* Headline display */
   .display-xl {
     @apply font-display text-ink-900;
     font-size: clamp(2.75rem, 7.5vw, 6.25rem);
@@ -143,15 +158,46 @@
     line-height: 1.05;
     letter-spacing: -0.02em;
   }
+  .display-sm {
+    @apply font-display text-ink-900;
+    font-size: clamp(1.25rem, 2vw, 1.625rem);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
   .eyebrow {
     @apply font-mono text-[11px] uppercase tracking-[0.18em] text-ink-500;
+  }
+  .num-display {
+    @apply font-display text-ink-900 leading-none tracking-[-0.02em];
+  }
+
+  /* Marker highlight (used to underline a single editorial word) */
+  .marker {
+    position: relative;
+    display: inline-block;
+  }
+  .marker::after {
+    content: '';
+    position: absolute;
+    left: -2px; right: -2px; bottom: 0.08em;
+    height: 0.42em;
+    background: theme('colors.ember.200');
+    z-index: -1;
+    border-radius: 2px;
+  }
+  .marker-soft::after {
+    background: theme('colors.ember.100');
+  }
+  .marker-paper::after {
+    background: theme('colors.ember.700');
+    opacity: .6;
   }
 
   /* Marquee */
   .marquee-track {
     display: flex;
     width: max-content;
-    animation: marquee 40s linear infinite;
+    animation: marquee 50s linear infinite;
   }
   .marquee-mask {
     mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
@@ -162,8 +208,8 @@
   .reveal {
     opacity: 0;
     transform: translateY(18px);
-    transition: opacity 1s cubic-bezier(0.22, 1, 0.36, 1),
-                transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: opacity .9s cubic-bezier(0.22, 1, 0.36, 1),
+                transform .9s cubic-bezier(0.22, 1, 0.36, 1);
     will-change: transform, opacity;
   }
   .reveal.is-visible { opacity: 1; transform: translateY(0); }
@@ -173,18 +219,18 @@
   .reveal[data-delay="400"] { transition-delay: .32s; }
   .reveal[data-delay="500"] { transition-delay: .40s; }
 
-  /* Subtle grid used as a page backdrop, very low contrast. */
+  /* Faint grid backdrop (used very subtly) */
   .bg-grid-faint {
     background-image:
       linear-gradient(to right, rgba(11,10,8,.04) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(11,10,8,.04) 1px, transparent 1px);
     background-size: 56px 56px;
     background-position: -1px -1px;
-    mask-image: radial-gradient(ellipse 60% 50% at 50% 30%, #000 30%, transparent 80%);
-    -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 30%, #000 30%, transparent 80%);
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 80%);
   }
 
-  /* Card hover — subtle, not bouncy. */
+  /* Card hover */
   .card-hover {
     @apply transition-all duration-300 ease-out-quint;
   }
@@ -193,31 +239,99 @@
     box-shadow: 0 18px 50px -22px rgba(11,10,8,.22);
   }
 
-  /* Page enter */
+  /* Animations (small ones used inline) */
   .anim-page-in { animation: fade-up .5s cubic-bezier(0.22, 1, 0.36, 1) both; }
-  .anim-fade-in { animation: fade-in 1s ease both; }
+  .anim-fade-in { animation: fade-in .8s ease both; }
+  .anim-pop-in  { animation: pop-in 160ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .anim-pop-out { animation: pop-out 140ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .anim-item-in { animation: item-in .5s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
   /* Safe-area */
   .safe-top    { padding-top:    max(env(safe-area-inset-top),    0px); }
   .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
 
-  /* Skeleton shimmer */
+  /* Skeleton (shimmer) */
   .skeleton {
     background: linear-gradient(90deg, #E8E4D9 0%, #F4F0E6 40%, #E8E4D9 80%);
     background-size: 400px 100%;
     animation: shimmer 1.4s linear infinite;
+    border-radius: 6px;
   }
-  @keyframes shimmer {
-    0%   { background-position: -200px 0; }
-    100% { background-position:  200px 0; }
+  .skeleton-line { @apply skeleton h-3; }
+  .skeleton-block { @apply skeleton h-24; }
+
+  /* Staggered list children (apply .stagger to a parent) */
+  .stagger > * { animation: item-in .5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .stagger > *:nth-child(1)  { animation-delay: .03s; }
+  .stagger > *:nth-child(2)  { animation-delay: .06s; }
+  .stagger > *:nth-child(3)  { animation-delay: .09s; }
+  .stagger > *:nth-child(4)  { animation-delay: .12s; }
+  .stagger > *:nth-child(5)  { animation-delay: .15s; }
+  .stagger > *:nth-child(6)  { animation-delay: .18s; }
+  .stagger > *:nth-child(7)  { animation-delay: .21s; }
+  .stagger > *:nth-child(8)  { animation-delay: .24s; }
+  .stagger > *:nth-child(9)  { animation-delay: .27s; }
+  .stagger > *:nth-child(10) { animation-delay: .30s; }
+  .stagger > *:nth-child(n+11) { animation-delay: .33s; }
+
+  /* Underline link */
+  .link-quiet {
+    @apply text-ink-700 hover:text-ink-900 transition-colors;
+  }
+  .link-accent {
+    @apply text-ember-600 hover:text-ember-700 transition-colors font-semibold;
   }
 
-  /* Drop-in for popovers */
-  @keyframes pop-in {
-    0%   { opacity: 0; transform: translateY(-4px) scale(.98); }
-    100% { opacity: 1; transform: translateY(0)    scale(1); }
+  /* Status dot (small, used in lists) */
+  .status-dot {
+    @apply inline-block w-1.5 h-1.5 rounded-full shrink-0;
   }
-  .anim-pop-in  { animation: pop-in 160ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+  /* Sidebar nav (in-app shell) */
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-semibold
+           text-ink-700 hover:text-ink-900 hover:bg-paper-100 transition-colors;
+  }
+  .nav-item-active {
+    @apply text-ink-900 bg-ink-900/[0.04] relative;
+  }
+  .nav-item-active::before {
+    content: '';
+    position: absolute;
+    left: -12px; top: 8px; bottom: 8px;
+    width: 3px;
+    background: theme('colors.ember.500');
+    border-radius: 2px;
+  }
+
+  /* Table */
+  .table-quiet {
+    @apply w-full text-sm border-collapse;
+  }
+  .table-quiet thead th {
+    @apply text-left text-[11px] uppercase tracking-[0.14em] font-semibold text-ink-500
+           px-4 py-3 border-b border-ink-200;
+  }
+  .table-quiet tbody td {
+    @apply px-4 py-3 border-b border-ink-200/60 align-middle;
+  }
+  .table-quiet tbody tr {
+    @apply transition-colors;
+  }
+  .table-quiet tbody tr:hover {
+    background: rgba(11,10,8,.02);
+  }
+
+  /* Divider with a label (used in headers like "Activity — last 24h") */
+  .section-rule {
+    @apply flex items-center gap-3 text-ink-500;
+  }
+  .section-rule::before, .section-rule::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: theme('colors.ink.200');
+  }
 }
 
 /* ---------- Reduced motion ---------- */
@@ -228,7 +342,8 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .reveal, .marquee-track, .anim-fade-in, .anim-page-in {
+  .reveal, .marquee-track, .stagger > *,
+  .anim-fade-in, .anim-page-in, .anim-pop-in, .anim-item-in {
     opacity: 1 !important;
     transform: none !important;
     animation: none !important;

@@ -67,7 +67,7 @@ export default function VerifyCode() {
     <AuthShell
       title="Microwork"
       subtitle={`Check your email — we sent a 6-digit code to ${email}.`}
-      footer={<><Link to="/login" className="text-brand-600 hover:underline">Cancel</Link></>}
+      footer={<><Link to="/login" className="text-ember-600 hover:text-ember-700 font-semibold">Cancel</Link></>}
     >
       <form onSubmit={submit} noValidate>
         {/* Hidden field that helps mobile browsers auto-fill from SMS */}
@@ -100,7 +100,7 @@ export default function VerifyCode() {
               maxLength={1}
               aria-label={`Digit ${i + 1} of 6`}
               aria-invalid={!!error}
-              className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-semibold border border-ink-200 rounded-lg focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 outline-none"
+              className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-semibold border border-ink-200 rounded-md focus:border-ink-900 focus:ring-0 outline-none transition-colors"
             />
           ))}
         </div>
@@ -114,7 +114,7 @@ export default function VerifyCode() {
             <button
               type="button"
               onClick={() => setCooldown(60)}
-              className="text-brand-600 hover:underline"
+              className="text-ember-600 hover:text-ember-700 font-semibold"
             >
               Resend code
             </button>

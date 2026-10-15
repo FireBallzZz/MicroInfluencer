@@ -1,119 +1,208 @@
 import { Link } from 'react-router-dom';
 import {
-  Megaphone,
-  Users,
-  CheckCircle2,
-  FileText,
-  ArrowRight,
-  Clock,
-  XCircle,
+  Megaphone, ArrowRight, FileText, CheckCircle2, XCircle, Clock, Plus, Inbox,
+  Users, Building2,
 } from 'lucide-react';
 import { useStore } from '../../state/Store';
-import { CampaignStatusBadge, ProposalStatusBadge } from '../../components/ui';
+import {
+  CampaignStatusBadge, ProposalStatusBadge, PageHeader, SectionHeader,
+  ChannelArt, StatRow, EmptyState, Button, Avatar, ActionListItem,
+} from '../../components/ui';
 import { fmtRelativeTime, currency } from '../../data/seed';
 
 export default function BrandDashboard() {
   const { brand, campaigns, proposals } = useStore();
   const mine = campaigns.filter((c) => c.brandId === brand.id);
   const myProposals = proposals.filter((p) => mine.some((c) => c.id === p.campaignId));
+  const active = mine.filter((c) => c.status === 'published');
 
   const counts = {
     drafts: mine.filter((c) => c.status === 'draft').length,
-    published: mine.filter((c) => c.status === 'published').length,
+    published: active.length,
     closed: mine.filter((c) => c.status === 'closed').length,
     newProposals: myProposals.filter((p) => p.status === 'pending').length,
+    shortlist: myProposals.filter((p) => p.status === 'shortlisted').length,
   };
+
+  const acceptedTotal = myProposals.filter((p) => p.status === 'accepted').length;
+  const slotsTotal = active.reduce((s, c) => s + c.creatorsNeeded, 0);
+  const fillRate = slotsTotal > 0 ? Math.round((acceptedTotal / slotsTotal) * 100) : 0;
 
   const latestProposals = myProposals.slice(0, 5);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-ink-900">{brand.companyName}</h1>
-          <p className="text-sm text-ink-500">Your campaigns at a glance.</p>
-        </div>
-        <Link to="/brand/campaigns/create" className="btn btn-primary btn-md">
-          <Megaphone className="w-4 h-4" /> New campaign
-        </Link>
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Today"
+        title={brand.companyName}
+        description="A focused view of what needs attention. Newest first."
+        action={
+          <Link to="/brand/campaigns/create" className="btn btn-primary btn-md">
+            <Plus className="w-4 h-4" /> New campaign
+          </Link>
+        }
+      />
+
+      {/* Action-first summary */}
+      <div className="grid lg:grid-cols-2 gap-5">
+        <article className="card p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="eyebrow">Needs review</div>
+              <div className="mt-1.5 font-display text-xl text-ink-900 tracking-[-0.01em]">
+                {counts.newProposals + counts.shortlist} proposal{counts.newProposals + counts.shortlist === 1 ? '' : 's'}
+              </div>
+              <div className="text-xs text-ink-500 mt-1">
+                {counts.newProposals} new · {counts.shortlist} shortlisted
+              </div>
+            </div>
+            <Inbox className="w-5 h-5 text-ember-500" />
+          </div>
+          <Link to="/brand/campaigns" className="btn btn-secondary btn-sm mt-4">
+            Review proposals <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </article>
+
+        <article className="card p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="eyebrow">Active campaign fill rate</div>
+              <div className="mt-1.5 font-display text-xl text-ink-900 tracking-[-0.01em]">
+                {fillRate}%
+              </div>
+              <div className="text-xs text-ink-500 mt-1">
+                {acceptedTotal} of {slotsTotal} creator slots filled
+              </div>
+            </div>
+            <Users className="w-5 h-5 text-sky-700" />
+          </div>
+          <div className="mt-4 h-1.5 bg-paper-100 rounded-sm overflow-hidden">
+            <div
+              className="h-full bg-ink-900"
+              style={{ width: fillRate + '%' }}
+            />
+          </div>
+        </article>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Stat label="Drafts" value={counts.drafts} icon={<FileText className="w-4 h-4" />} />
-        <Stat label="Published" value={counts.published} icon={<CheckCircle2 className="w-4 h-4 text-emerald-600" />} />
-        <Stat label="Closed" value={counts.closed} icon={<XCircle className="w-4 h-4 text-ink-500" />} />
-        <Stat label="New proposals" value={counts.newProposals} icon={<Clock className="w-4 h-4 text-amber-500" />} />
-      </div>
+      <StatRow
+        items={[
+          { label: 'Drafts', value: counts.drafts, hint: 'not live' },
+          { label: 'Published', value: counts.published, hint: 'accepting' },
+          { label: 'Closed', value: counts.closed, hint: 'wrapped up' },
+          { label: 'New proposals', value: counts.newProposals, hint: 'awaiting review' },
+        ]}
+      />
 
-      {/* Active campaigns with progress */}
-      <div className="card p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-ink-900">Active campaigns</h2>
-          <Link to="/brand/campaigns" className="text-sm text-brand-600 hover:underline">All campaigns</Link>
-        </div>
-        {mine.filter((c) => c.status !== 'closed').length === 0 ? (
-          <div className="text-sm text-ink-500 py-6 text-center">No campaigns yet. Create your first one.</div>
+      {/* Up next — most important list */}
+      <section>
+        <SectionHeader
+          eyebrow="Up next"
+          title="Active campaigns"
+          description="Each row shows how full the roster is. Click to manage proposals."
+          action={
+            <Link to="/brand/campaigns" className="text-sm link-accent inline-flex items-center gap-1">
+              All campaigns <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          }
+        />
+        {active.length === 0 ? (
+          <div className="card p-10 mt-5 text-center">
+            <Megaphone className="w-8 h-8 text-ink-300 mx-auto mb-3" />
+            <div className="text-sm font-semibold text-ink-900">No active campaigns</div>
+            <div className="text-xs text-ink-500 mt-1">Publish a campaign to start receiving proposals.</div>
+            <Link to="/brand/campaigns/create" className="btn btn-primary btn-sm mt-4">
+              <Plus className="w-3.5 h-3.5" /> New campaign
+            </Link>
+          </div>
         ) : (
-          <div className="divide-y divide-ink-100">
-            {mine.filter((c) => c.status !== 'closed').slice(0, 4).map((c) => {
+          <ul className="mt-5 grid sm:grid-cols-2 gap-3 stagger">
+            {active.slice(0, 4).map((c) => {
               const accepted = myProposals.filter((p) => p.campaignId === c.id && p.status === 'accepted').length;
               const total = myProposals.filter((p) => p.campaignId === c.id).length;
+              const pending = myProposals.filter((p) => p.campaignId === c.id && p.status === 'pending').length;
+              const fill = c.creatorsNeeded > 0 ? Math.round((accepted / c.creatorsNeeded) * 100) : 0;
               return (
-                <Link key={c.id} to={`/brand/campaigns/${c.id}`} className="py-3 flex items-center gap-3 hover:bg-ink-50 -mx-2 px-2 rounded">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-ink-900 truncate">{c.title}</div>
-                    <div className="text-xs text-ink-500">{c.category} · {c.requiredPlatform} · {currency(c.budgetPerCreator)} / creator</div>
-                  </div>
-                  <div className="text-right hidden sm:block">
-                    <div className="text-sm font-semibold text-ink-900">{accepted} of {c.creatorsNeeded}</div>
-                    <div className="text-xs text-ink-500">creators accepted · {total} proposals</div>
-                  </div>
-                  <CampaignStatusBadge status={c.status} />
-                </Link>
+                <li key={c.id}>
+                  <Link
+                    to={`/brand/campaigns/${c.id}/proposals`}
+                    className="card card-hover p-4 sm:p-5 group block h-full"
+                  >
+                    <div className="flex items-start gap-3">
+                      <ChannelArt name={c.title} seed={c.id} height={48} className="w-12 rounded-md shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-ink-500">{c.category} · {c.requiredPlatform}</div>
+                        <div className="font-semibold text-ink-900 leading-snug line-clamp-2">{c.title}</div>
+                      </div>
+                    </div>
+                    <div className="mt-4 grid grid-cols-3 gap-px border border-ink-200 bg-ink-200 rounded-md overflow-hidden">
+                      <Cell label="Accepted" value={`${accepted} / ${c.creatorsNeeded}`} />
+                      <Cell label="Proposals" value={String(total)} />
+                      <Cell label="New" value={String(pending)} />
+                    </div>
+                    <div className="mt-3 h-1.5 bg-paper-100 rounded-sm overflow-hidden">
+                      <div className="h-full bg-ink-900" style={{ width: fill + '%' }} />
+                    </div>
+                    <div className="mt-3 flex items-center justify-between">
+                      <CampaignStatusBadge status={c.status} />
+                      <span className="text-[11px] font-mono uppercase tracking-[0.12em] text-ink-500">
+                        {fill}% filled
+                      </span>
+                    </div>
+                  </Link>
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
-      </div>
+      </section>
 
       {/* Latest proposals */}
-      <div className="card p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-ink-900">Latest proposals</h2>
-          <Link to="/brand/campaigns" className="text-sm text-brand-600 hover:underline">Manage proposals</Link>
-        </div>
+      <section>
+        <SectionHeader
+          eyebrow="Inbox"
+          title="Latest proposals"
+          description="Newest applications across your campaigns."
+          action={
+            <Link to="/brand/campaigns" className="text-sm link-accent inline-flex items-center gap-1">
+              Manage all <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          }
+        />
         {latestProposals.length === 0 ? (
-          <div className="text-sm text-ink-500 py-6 text-center">No proposals yet.</div>
+          <div className="card p-10 mt-5 text-center">
+            <Inbox className="w-8 h-8 text-ink-300 mx-auto mb-3" />
+            <div className="text-sm font-semibold text-ink-900">No proposals yet</div>
+            <div className="text-xs text-ink-500 mt-1">Publish a campaign to start receiving them.</div>
+          </div>
         ) : (
-          <div className="divide-y divide-ink-100">
+          <ul className="mt-5 card divide-y divide-ink-200/60 stagger">
             {latestProposals.map((p) => {
               const c = mine.find((x) => x.id === p.campaignId);
               return (
-                <Link key={p.id} to={`/brand/campaigns/${p.campaignId}/proposals`} className="py-3 flex items-center gap-3 hover:bg-ink-50 -mx-2 px-2 rounded">
-                  <div className="w-9 h-9 rounded-full bg-brand-50 text-brand-700 flex items-center justify-center font-semibold text-sm shrink-0">
-                    {p.creatorName.split(' ').map((s) => s[0]).slice(0, 2).join('')}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold text-ink-900 truncate">{p.creatorName}</div>
-                    <div className="text-xs text-ink-500 truncate">applied to “{c?.title}” · {fmtRelativeTime(p.submittedAt)}</div>
-                  </div>
-                  <ProposalStatusBadge status={p.status} />
-                  <ArrowRight className="w-4 h-4 text-ink-300" />
-                </Link>
+                <li key={p.id}>
+                  <ActionListItem
+                    icon={<Avatar name={p.creatorName} size="sm" tone="ink" />}
+                    title={p.creatorName}
+                    hint={`applied to “${c?.title}” · ${fmtRelativeTime(p.submittedAt)}`}
+                    right={<ProposalStatusBadge status={p.status} />}
+                    to={`/brand/campaigns/${p.campaignId}/proposals`}
+                  />
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
-      </div>
+      </section>
     </div>
   );
 }
 
-function Stat({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
+function Cell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="card p-4">
-      <div className="flex items-center gap-1.5 text-xs text-ink-500">{icon} {label}</div>
-      <div className="mt-1 text-2xl font-bold text-ink-900">{value}</div>
+    <div className="bg-paper-50 py-2 px-3 text-center">
+      <div className="eyebrow !text-[9px]">{label}</div>
+      <div className="num-display text-sm mt-0.5">{value}</div>
     </div>
   );
 }

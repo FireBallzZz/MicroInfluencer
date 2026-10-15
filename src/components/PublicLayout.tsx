@@ -16,7 +16,6 @@ function Logo({ onClick, invert = false }: { onClick?: () => void; invert?: bool
         ${invert ? 'bg-paper-50 text-ink-900' : 'bg-ink-900 text-paper-50'}
         rounded-sm overflow-hidden`}
       >
-        {/* Two-stroke M, evokes the brand initial without a generic sparkle. */}
         <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" aria-hidden>
           <path
             d="M3 19V5h2.5L12 14 18.5 5H21v14h-2.5V10.6L13 18h-2L5 10.6V19H3z"
@@ -29,6 +28,13 @@ function Logo({ onClick, invert = false }: { onClick?: () => void; invert?: bool
         ${invert ? 'text-paper-50' : 'text-ink-900'}`}
       >
         Microwork
+      </span>
+      <span
+        aria-hidden
+        className={`hidden sm:inline-block font-mono text-[10px] uppercase tracking-[0.18em] px-1.5 py-0.5 rounded-sm
+        ${invert ? 'bg-ink-700 text-ink-300' : 'bg-paper-100 text-ink-500'}`}
+      >
+        demo
       </span>
     </Link>
   );
@@ -89,9 +95,9 @@ export default function PublicLayout() {
 
           <nav className="hidden md:flex items-center gap-8 text-sm text-ink-700">
             <a href="#how" className="hover:text-ink-900 transition-colors">How it works</a>
+            <a href="#marketplace" className="hover:text-ink-900 transition-colors">Marketplace</a>
             <a href="#creators" className="hover:text-ink-900 transition-colors">For creators</a>
             <a href="#brands" className="hover:text-ink-900 transition-colors">For brands</a>
-            <a href="#market" className="hover:text-ink-900 transition-colors">Live market</a>
           </nav>
 
           <div className="flex items-center gap-1">
@@ -123,7 +129,7 @@ export default function PublicLayout() {
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
               className="md:hidden ml-1 inline-flex items-center justify-center w-10 h-10
-                         text-ink-700 hover:bg-ink-100/60 rounded-sm"
+                         text-ink-700 hover:bg-ink-100/60 rounded-md"
             >
               {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -137,9 +143,9 @@ export default function PublicLayout() {
         >
           <nav className="container-page py-4 flex flex-col gap-1 text-sm text-ink-700">
             <a href="#how" onClick={closeMenu} className="py-2.5">How it works</a>
+            <a href="#marketplace" onClick={closeMenu} className="py-2.5">Marketplace</a>
             <a href="#creators" onClick={closeMenu} className="py-2.5">For creators</a>
             <a href="#brands" onClick={closeMenu} className="py-2.5">For brands</a>
-            <a href="#market" onClick={closeMenu} className="py-2.5">Live market</a>
             {!user && (
               <Link to="/login" onClick={closeMenu} className="py-2.5">Log in</Link>
             )}
@@ -163,7 +169,7 @@ export default function PublicLayout() {
               <div className="mt-6 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-success animate-blink" />
                 <span className="text-xs font-mono uppercase tracking-[0.18em] text-ink-400">
-                  All systems normal
+                  Demo data — localStorage
                 </span>
               </div>
             </div>
@@ -173,9 +179,9 @@ export default function PublicLayout() {
                 <h4 className="eyebrow text-ink-400">Product</h4>
                 <ul className="mt-4 space-y-2.5">
                   <li><a href="#how" className="hover:text-paper-50 transition-colors">How it works</a></li>
+                  <li><a href="#marketplace" className="hover:text-paper-50 transition-colors">Marketplace</a></li>
                   <li><a href="#creators" className="hover:text-paper-50 transition-colors">For creators</a></li>
                   <li><a href="#brands" className="hover:text-paper-50 transition-colors">For brands</a></li>
-                  <li><a href="#market" className="hover:text-paper-50 transition-colors">Live market</a></li>
                 </ul>
               </div>
               <div>
@@ -192,7 +198,7 @@ export default function PublicLayout() {
                 <ul className="mt-4 space-y-2.5">
                   <li className="hover:text-paper-50 transition-colors cursor-default">Internship PRD</li>
                   <li className="hover:text-paper-50 transition-colors cursor-default">Source on request</li>
-                  <li className="hover:text-paper-50 transition-colors cursor-default">v0.1.0 · 2026</li>
+                  <li className="hover:text-paper-50 transition-colors cursor-default">v0.2.0 · 2026</li>
                 </ul>
               </div>
             </div>
@@ -200,7 +206,7 @@ export default function PublicLayout() {
 
           <div className="mt-14 pt-6 border-t border-ink-700/70 flex flex-col sm:flex-row justify-between gap-3 text-xs text-ink-400">
             <span>© 2026 Microwork demo. Built for the internship PRD.</span>
-            <span className="font-mono">made with restraint, not gradients</span>
+            <span className="font-mono">designed with restraint, not gradients</span>
           </div>
         </div>
       </footer>

@@ -15,21 +15,24 @@ import {
   CircleDot,
   TrendingUp,
   XCircle,
+  MapPin,
 } from 'lucide-react';
 import { useAuth } from '../../state/AuthContext';
 import { useEffect, useState } from 'react';
 import CountUp from '../../components/CountUp';
 import { useReveal } from '../../hooks/useReveal';
+import { discoverableCreators, NICHES, fmtNumber, currency, seedCampaigns, fmtDate } from '../../data/seed';
+import { Avatar, ChannelArt, PlatformIcon, CampaignStatusBadge } from '../../components/ui';
 
 /* ─────────────────────── Data ─────────────────────── */
 
-const TALENT = ['Lifestyle', 'Beauty', 'Fitness', 'Food', 'Tech', 'Travel', 'Gaming', 'Finance'];
-const BRIEFS  = ['Product launch', 'Brand awareness', 'Recipe integration', 'Unboxing', 'How-to', 'Series deal'];
+const TALENT = NICHES.slice(0, 8);
+const BRIEFS = ['Product launch', 'Brand awareness', 'Recipe integration', 'Unboxing', 'How-to', 'Series deal'];
 
 const PARTNERS = [
-  'Northwind', 'Hana Studio', 'Brewly', 'Lumen Labs', 'Drift',
-  'Kindred', 'Atlas Outdoors', 'Field & Folk', 'Pebble', 'Northwood',
-  'Coriander', 'Vela Goods', 'Otto Coffee', 'Mara Skincare', 'Loomwell',
+  'Northwind Beverages', 'Hana Studio', 'Brewly Coffee', 'Lumen Labs',
+  'Drift Apparel', 'Kindred Snacks', 'Atlas Outdoors', 'Field & Folk',
+  'Pebble Home', 'Northwood', 'Coriander', 'Vela Goods',
 ];
 
 /* Live, deterministic-looking activity feed for the "Live market" section. */
@@ -50,6 +53,10 @@ const TONE_STYLES: Record<string, { icon: JSX.Element; dot: string; text: string
   accept:    { icon: <Check className="w-3 h-3" />,      dot: 'bg-emerald-600',text: 'text-emerald-700',label: 'Accepted' },
   reject:    { icon: <XCircle className="w-3 h-3" />,    dot: 'bg-ink-300',    text: 'text-ink-500',    label: 'Passed' },
 };
+
+/* Showcase: 3 creators, 3 campaigns from the demo data. */
+const SHOWCASE_CREATORS = discoverableCreators.slice(0, 3);
+const SHOWCASE_CAMPAIGNS = seedCampaigns.filter((c) => c.status === 'published').slice(0, 3);
 
 /* ─────────────────────── Page ─────────────────────── */
 
@@ -80,13 +87,15 @@ export default function Landing() {
 
       <Manifesto />
 
+      <MarketplaceSection />
+
       <HowItWorks />
 
       <Roles />
 
       <LiveMarket />
 
-      <Process />
+      <BriefAnatomy />
 
       <FinalCTA dashboardLink={dashboardLink} onStart={() => navigate('/register/role')} />
     </div>
@@ -112,11 +121,10 @@ function Hero({
       <div className="absolute inset-0 bg-grid-faint pointer-events-none" aria-hidden />
 
       <div className="container-page relative pt-10 sm:pt-16 pb-14 sm:pb-20">
-        {/* Top meta row */}
         <div className="flex items-center justify-between text-xs text-ink-500">
           <div className="eyebrow flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-ember-500" />
-            <span>Internship PRD · v0.1</span>
+            <span>Internship PRD · v0.2</span>
           </div>
           <div className="hidden sm:flex items-center gap-5">
             <span className="font-mono text-ink-400">No. 002 — Marketplace</span>
@@ -125,7 +133,6 @@ function Hero({
         </div>
 
         <div className="mt-10 sm:mt-14 grid lg:grid-cols-12 gap-10 lg:gap-16 items-end">
-          {/* Headline */}
           <div className="lg:col-span-8">
             <Reveal>
               <h1 className="display-xl">
@@ -172,16 +179,15 @@ function Hero({
             </Reveal>
           </div>
 
-          {/* Search — desktop right column */}
           <div className="lg:col-span-4">
             <Reveal delay={300}>
               <div className="card p-5 sm:p-6">
                 <div className="flex items-center justify-between">
                   <span className="eyebrow">Try a search</span>
-                  <span className="tag tag-outline">Live</span>
+                  <span className="tag tag-ember">Demo data</span>
                 </div>
 
-                <div className="mt-4 flex border border-ink-200 rounded-sm overflow-hidden">
+                <div className="mt-4 flex border border-ink-200 rounded-md overflow-hidden">
                   <button
                     onClick={() => setTab('talent')}
                     className={`flex-1 h-10 text-[13px] font-semibold flex items-center justify-center gap-1.5 transition-colors
@@ -198,7 +204,7 @@ function Hero({
                   </button>
                 </div>
 
-                <form onSubmit={(e) => { e.preventDefault(); onSearch(); }} className="mt-3 flex items-center border border-ink-200 bg-paper-50 rounded-sm focus-within:border-ink-900 transition-colors">
+                <form onSubmit={(e) => { e.preventDefault(); onSearch(); }} className="mt-3 flex items-center border border-ink-200 bg-paper-50 rounded-md focus-within:border-ink-900 transition-colors">
                   <Search className="w-4 h-4 text-ink-400 ml-3.5 shrink-0" />
                   <input
                     value={query}
@@ -219,7 +225,7 @@ function Hero({
                   {(tab === 'talent' ? TALENT : BRIEFS).slice(0, 6).map((s) => (
                     <button
                       key={s}
-                      onClick={() => onSearch()}
+                      onClick={onSearch}
                       className="tag tag-paper hover:bg-ink-100 transition-colors"
                     >
                       {s}
@@ -231,13 +237,12 @@ function Hero({
           </div>
         </div>
 
-        {/* Stat band */}
         <Reveal delay={300}>
           <div className="mt-14 sm:mt-20 grid grid-cols-2 sm:grid-cols-4 gap-y-8 gap-x-6 border-t border-ink-200 pt-8">
-            <Stat n={<CountUp to={10420} duration={1400} />} label="Creators on platform" />
-            <Stat n={<><CountUp to={2418} duration={1400} suffix="+" /></>} label="Brands running briefs" />
-            <Stat n={<><CountUp to={3.2} duration={1400} decimals={1} suffix="x" /></>} label="Median ROI on hires" />
-            <Stat n={<><CountUp to={94} duration={1400} suffix="%" /></>} label="Briefs filled in 7d" />
+            <Stat n={<CountUp to={SHOWCASE_CREATORS.length * 80 + 8400} duration={1400} />} label="Demo creators in pool" />
+            <Stat n={<>{SHOWCASE_CAMPAIGNS.length * 12 + 38}</>} label="Demo briefs shipped" />
+            <Stat n={<>{<CountUp to={3.2} duration={1400} decimals={1} suffix="x" />}</>} label="Median ROI on hires" />
+            <Stat n={<>{<CountUp to={94} duration={1400} suffix="%" />}</>} label="Demo briefs filled in 7d" />
           </div>
         </Reveal>
       </div>
@@ -266,8 +271,8 @@ function TickerBar() {
   return (
     <section className="border-y border-ink-200 bg-paper-100/50 py-6 overflow-hidden">
       <div className="container-page mb-3 flex items-center justify-between text-ink-500">
-        <span className="eyebrow">Trusted by teams at</span>
-        <span className="hidden sm:block eyebrow text-ink-400">2,400+ demo brands</span>
+        <span className="eyebrow">Demo brands in the marketplace</span>
+        <span className="hidden sm:block eyebrow text-ink-400">Illustrative · not real clients</span>
       </div>
       <div className="marquee-mask overflow-hidden">
         <div className="marquee-track gap-12 pr-12">
@@ -289,7 +294,7 @@ function TickerBar() {
 }
 
 /* ════════════════════════════════════════════════════════
-   MANIFESTO — single editorial line + a 3-line grid.
+   MANIFESTO
    ════════════════════════════════════════════════════════ */
 
 function Manifesto() {
@@ -343,13 +348,124 @@ function Manifesto() {
 }
 
 /* ════════════════════════════════════════════════════════
-   HOW IT WORKS — three editorial step cards.
+   MARKETPLACE — real sample cards from the seed data.
+   ════════════════════════════════════════════════════════ */
+
+function MarketplaceSection() {
+  return (
+    <section id="marketplace" className="bg-paper-100/40 border-y border-ink-200 py-20 sm:py-28">
+      <div className="container-page">
+        <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-end mb-12">
+          <div className="lg:col-span-7">
+            <Reveal>
+              <span className="eyebrow">/ 02 — Marketplace</span>
+              <h2 className="display-lg mt-3">
+                A taste of the <span className="marker marker-soft">real demo data</span>.
+              </h2>
+            </Reveal>
+          </div>
+          <Reveal delay={100} className="lg:col-span-5">
+            <p className="text-ink-500 text-lg leading-relaxed">
+              What you see below is the actual seed data powering the demo —
+              no marketing-style stock avatars or invented campaigns. Sign in
+              to apply, post and shortlist.
+            </p>
+          </Reveal>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-10">
+          {/* Creators */}
+          <Reveal>
+            <div className="flex items-end justify-between mb-4">
+              <h3 className="display-sm">From the creator pool</h3>
+              <Link to="/login?next=/brand/creators" className="text-sm link-accent inline-flex items-center gap-1">
+                See all <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <ul className="space-y-3 stagger">
+              {SHOWCASE_CREATORS.map((c) => (
+                <li key={c.id}>
+                  <Link
+                    to={`/login?next=/brand/creators/${c.id}`}
+                    className="card card-hover p-4 flex items-center gap-4 group"
+                  >
+                    <ChannelArt name={c.fullName} seed={c.id} height={56} className="w-14 rounded-md" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="font-semibold text-ink-900 truncate">{c.fullName}</div>
+                        {c.verified && <BadgeCheck className="w-3.5 h-3.5 text-ember-500 shrink-0" />}
+                      </div>
+                      <div className="mt-0.5 text-xs text-ink-500 truncate flex items-center gap-1.5">
+                        <PlatformIcon platform={c.primaryPlatform} />
+                        {c.niche}
+                        <span className="text-ink-300">·</span>
+                        <MapPin className="w-3 h-3" />
+                        {c.location}
+                      </div>
+                    </div>
+                    <div className="hidden sm:block text-right shrink-0">
+                      <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-500">Engagement</div>
+                      <div className="num-display text-lg text-ink-900">{c.engagementRate}%</div>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+
+          {/* Briefs */}
+          <Reveal delay={100}>
+            <div className="flex items-end justify-between mb-4">
+              <h3 className="display-sm">From open briefs</h3>
+              <Link to="/login?next=/creator/campaigns" className="text-sm link-accent inline-flex items-center gap-1">
+                See all <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <ul className="space-y-3 stagger">
+              {SHOWCASE_CAMPAIGNS.map((c) => (
+                <li key={c.id}>
+                  <Link
+                    to={`/login?next=/creator/campaigns/${c.id}`}
+                    className="card card-hover p-4 group"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-xs text-ink-500 flex items-center gap-1.5 mb-1">
+                          <Avatar name={c.brandName} size="xs" tone="ink" />
+                          <span className="truncate">{c.brandName}</span>
+                        </div>
+                        <div className="font-semibold text-ink-900 leading-snug line-clamp-2">{c.title}</div>
+                        <div className="mt-1 text-xs text-ink-500">
+                          {c.category} · {c.requiredPlatform} · due {fmtDate(c.applicationDeadline)}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-500">Per creator</div>
+                        <div className="num-display text-lg text-ink-900">{currency(c.budgetPerCreator)}</div>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between text-[11px] text-ink-500">
+                      <CampaignStatusBadge status={c.status} />
+                      <span>{c.creatorsNeeded} creators needed</span>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════════════════
+   HOW IT WORKS
    ════════════════════════════════════════════════════════ */
 
 function HowItWorks() {
   return (
     <section id="how" className="bg-ink-900 text-ink-200 py-20 sm:py-28 relative overflow-hidden">
-      {/* Very subtle grid */}
       <div
         className="absolute inset-0 opacity-[0.06] pointer-events-none"
         style={{
@@ -363,7 +479,7 @@ function HowItWorks() {
       <div className="container-page relative">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 border-b border-ink-700/70 pb-8">
           <Reveal>
-            <span className="eyebrow text-ink-400">/ 02 — How it works</span>
+            <span className="eyebrow text-ink-400">/ 03 — How it works</span>
             <h2 className="display-lg mt-3 text-paper-50 max-w-xl">
               Three steps. <span className="text-ink-400">Both sides.</span>
             </h2>
@@ -376,37 +492,31 @@ function HowItWorks() {
           </Reveal>
         </div>
 
-        <div className="mt-12 grid md:grid-cols-3 gap-px bg-ink-700/70 border border-ink-700/70">
-          <Reveal delay={100}>
-            <Step
-              n="01"
-              side="Creator"
-              icon={<BadgeCheck className="w-4 h-4" />}
-              title="Connect &amp; get verified."
-              body="OAuth your YouTube channel. We pull your real subscriber count, view rate and engagement. No screenshots, no claims."
-              meta="~ 30 seconds"
-            />
-          </Reveal>
-          <Reveal delay={200}>
-            <Step
-              n="02"
-              side="Brand"
-              icon={<Megaphone className="w-4 h-4" />}
-              title="Post a brief with a budget."
-              body="Set deliverables, deadline and per-creator rate. The brief goes live to matched creators within minutes."
-              meta="~ 5 minutes"
-            />
-          </Reveal>
-          <Reveal delay={300}>
-            <Step
-              n="03"
-              side="Both"
-              icon={<LineChart className="w-4 h-4" />}
-              title="Move proposals through a clean status."
-              body="Shortlist, accept, reject — visible to both sides. No inbox archaeology, no &ldquo;just checking in&rdquo; emails."
-              meta="Ongoing"
-            />
-          </Reveal>
+        <div className="mt-12 grid md:grid-cols-3 gap-px bg-ink-700/70 border border-ink-700/70 stagger">
+          <Step
+            n="01"
+            side="Creator"
+            icon={<BadgeCheck className="w-4 h-4" />}
+            title="Connect &amp; get verified."
+            body="OAuth your YouTube channel. We pull your real subscriber count, view rate and engagement. No screenshots, no claims."
+            meta="~ 30 seconds"
+          />
+          <Step
+            n="02"
+            side="Brand"
+            icon={<Megaphone className="w-4 h-4" />}
+            title="Post a brief with a budget."
+            body="Set deliverables, deadline and per-creator rate. The brief goes live to matched creators within minutes."
+            meta="~ 5 minutes"
+          />
+          <Step
+            n="03"
+            side="Both"
+            icon={<LineChart className="w-4 h-4" />}
+            title="Move proposals through a clean status."
+            body="Shortlist, accept, reject — visible to both sides. No inbox archaeology, no &ldquo;just checking in&rdquo; emails."
+            meta="Ongoing"
+          />
         </div>
       </div>
     </section>
@@ -440,7 +550,7 @@ function Step({
 }
 
 /* ════════════════════════════════════════════════════════
-   ROLES — two stacked editorial cards (creator / brand).
+   ROLES
    ════════════════════════════════════════════════════════ */
 
 function Roles() {
@@ -450,7 +560,7 @@ function Roles() {
       <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-end mb-12 sm:mb-16">
         <div className="lg:col-span-7">
           <Reveal>
-            <span className="eyebrow">/ 03 — Pick a side</span>
+            <span className="eyebrow">/ 04 — Pick a side</span>
             <h2 className="display-lg mt-3">
               Two roles, <span className="text-ink-400">one</span> clean flow.
             </h2>
@@ -491,7 +601,7 @@ function Roles() {
             title="Find the right creators and run real campaigns."
             body="Discover vetted creators, post briefs in minutes and manage proposals in one place."
             points={[
-              'Search 1,000s of vetted creators',
+              'Search the demo creator pool',
               'Filter by niche, platform, followers',
               'Post a campaign in minutes',
               'Shortlist, accept and reject proposals',
@@ -522,7 +632,6 @@ function RoleCard({
           ? 'bg-ink-900 text-paper-50 border-ink-900'
           : 'bg-paper-50 text-ink-900 border-ink-200'}`}
     >
-      {/* Tiny corner mark */}
       <div
         className={`absolute top-0 right-0 w-32 h-32 -mr-12 -mt-12 rounded-full
         ${isCreator ? 'bg-ember-500/15' : 'bg-ember-500/10'}`}
@@ -585,7 +694,7 @@ function RoleCard({
 }
 
 /* ════════════════════════════════════════════════════════
-   LIVE MARKET — activity ticker + a sample brief card.
+   LIVE MARKET
    ════════════════════════════════════════════════════════ */
 
 function LiveMarket() {
@@ -598,7 +707,6 @@ function LiveMarket() {
     return () => window.clearInterval(id);
   }, []);
 
-  // Show three items rotating through the feed
   const visible = [0, 1, 2].map((o) => FEED[(feedIndex + o) % FEED.length]);
 
   return (
@@ -607,19 +715,19 @@ function LiveMarket() {
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
           <div className="lg:col-span-5">
             <Reveal>
-              <span className="eyebrow">/ 04 — Live market</span>
+              <span className="eyebrow">/ 05 — Demo activity</span>
               <h2 className="display-lg mt-3">
                 Proposals, <span className="text-ink-400">moving.</span>
               </h2>
               <p className="mt-5 text-ink-500 text-lg max-w-md leading-relaxed">
-                A taste of what activity looks like inside the platform. Every
-                row is a real status change — shortlist, new proposal, accept,
-                pass — flowing through the marketplace right now.
+                A taste of what activity looks like inside the platform. The
+                rows below are deterministic sample events — they demonstrate
+                the status language and ordering, not a live user base.
               </p>
 
               <div className="mt-8 flex items-center gap-3">
                 <span className="w-2 h-2 rounded-full bg-emerald-600 animate-blink" />
-                <span className="eyebrow text-ink-700">Streaming demo data</span>
+                <span className="eyebrow text-ink-700">Sample data — auto-rotating</span>
               </div>
             </Reveal>
           </div>
@@ -632,7 +740,7 @@ function LiveMarket() {
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-blink" />
                     <span className="text-[13px] font-semibold text-ink-900">Activity</span>
                     <span className="text-ink-400 text-xs">·</span>
-                    <span className="font-mono text-[11px] text-ink-500">last 30m</span>
+                    <span className="font-mono text-[11px] text-ink-500">sample · 30m</span>
                   </div>
                   <span className="font-mono text-[11px] text-ink-500 hidden sm:inline">
                     auto-refresh 3s
@@ -672,10 +780,10 @@ function LiveMarket() {
 
                 <div className="px-5 sm:px-6 py-3 border-t border-ink-200 bg-paper-50 flex items-center justify-between">
                   <span className="text-[12px] text-ink-500">
-                    Showing 3 of <span className="font-mono text-ink-900">128</span> events
+                    Showing 3 of <span className="font-mono text-ink-900">8</span> sample events
                   </span>
-                  <a href="#" className="text-[12px] font-semibold text-ink-900 hover:text-ember-600 inline-flex items-center gap-1">
-                    Open full feed <ChevronRight className="w-3.5 h-3.5" />
+                  <a href="#how" className="text-[12px] font-semibold text-ink-900 hover:text-ember-600 inline-flex items-center gap-1">
+                    How it works <ChevronRight className="w-3.5 h-3.5" />
                   </a>
                 </div>
               </div>
@@ -683,9 +791,9 @@ function LiveMarket() {
 
             <Reveal delay={200}>
               <div className="mt-5 grid sm:grid-cols-3 gap-px border border-ink-200 bg-ink-200">
-                <MiniStat label="Active briefs"      value="312" />
-                <MiniStat label="Open proposals"     value="1,840" />
-                <MiniStat label="Avg. fill time"     value="4.6d" />
+                <MiniStat label="Active briefs"      value={String(seedCampaigns.filter(c => c.status === 'published').length)} />
+                <MiniStat label="Open proposals"     value="12" hint="demo" />
+                <MiniStat label="Avg. fill time"     value="4.6d" hint="demo" />
               </div>
             </Reveal>
           </div>
@@ -695,11 +803,12 @@ function LiveMarket() {
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: string }) {
+function MiniStat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="bg-paper-50 px-5 py-4">
       <div className="font-display text-2xl text-ink-900 leading-none tracking-[-0.02em]">
         {value}
+        {hint && <span className="ml-1.5 text-[10px] uppercase tracking-[0.14em] text-ink-400 font-mono align-middle">{hint}</span>}
       </div>
       <div className="mt-1.5 text-[11px] uppercase tracking-[0.14em] text-ink-500 font-semibold">
         {label}
@@ -709,16 +818,16 @@ function MiniStat({ label, value }: { label: string; value: string }) {
 }
 
 /* ════════════════════════════════════════════════════════
-   PROCESS — sample brief structure (for brands).
+   BRIEF ANATOMY
    ════════════════════════════════════════════════════════ */
 
-function Process() {
+function BriefAnatomy() {
   return (
     <section className="container-page py-20 sm:py-28">
       <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
         <div className="lg:col-span-4">
           <Reveal>
-            <span className="eyebrow">/ 05 — Brief anatomy</span>
+            <span className="eyebrow">/ 06 — Brief anatomy</span>
             <h2 className="display-md mt-3">
               Every brief looks like this.
             </h2>
@@ -750,7 +859,7 @@ function Process() {
                   <div className="text-[11px] uppercase tracking-[0.14em] text-ink-500 font-semibold">
                     Per creator
                   </div>
-                  <div className="font-display text-2xl text-ink-900 mt-1">$1,200</div>
+                  <div className="font-display text-2xl text-ink-900 mt-1">{currency(1200)}</div>
                 </div>
               </header>
 
@@ -799,7 +908,7 @@ function DefRow({ label, children }: { label: string; children: React.ReactNode 
 }
 
 /* ════════════════════════════════════════════════════════
-   FINAL CTA — confident single band.
+   FINAL CTA
    ════════════════════════════════════════════════════════ */
 
 function FinalCTA({ dashboardLink, onStart }: { dashboardLink: string | null; onStart: () => void }) {
@@ -807,7 +916,6 @@ function FinalCTA({ dashboardLink, onStart }: { dashboardLink: string | null; on
     <section className="container-page pb-20 sm:pb-28">
       <Reveal>
         <div className="relative overflow-hidden bg-ink-900 text-paper-50 rounded-[24px] px-6 sm:px-10 lg:px-14 py-12 sm:py-16">
-          {/* Decorative grid */}
           <div
             className="absolute inset-0 opacity-[0.05] pointer-events-none"
             style={{
@@ -817,7 +925,6 @@ function FinalCTA({ dashboardLink, onStart }: { dashboardLink: string | null; on
             }}
             aria-hidden
           />
-          {/* Ember wedge */}
           <div
             className="absolute -right-24 -top-24 w-80 h-80 rounded-full bg-ember-500/30 blur-3xl"
             aria-hidden
@@ -825,7 +932,7 @@ function FinalCTA({ dashboardLink, onStart }: { dashboardLink: string | null; on
 
           <div className="relative grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             <div className="lg:col-span-7">
-              <span className="eyebrow text-ink-400">/ 06 — Get started</span>
+              <span className="eyebrow text-ink-400">/ 07 — Get started</span>
               <h2 className="display-lg mt-3 text-paper-50">
                 Take it for a spin.<br />
                 <span className="text-ember-300 italic font-medium">60 seconds</span> to set up.
@@ -855,7 +962,7 @@ function FinalCTA({ dashboardLink, onStart }: { dashboardLink: string | null; on
                 I already have an account
               </Link>
               <p className="text-[12px] text-ink-400 mt-1">
-                No credit card. No email confirmation. Pure demo.
+                Demo only. No credit card. No email confirmation. Data lives in your browser.
               </p>
             </div>
           </div>

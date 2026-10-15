@@ -1,42 +1,66 @@
 import { Link } from 'react-router-dom';
 import { Pencil, ExternalLink } from 'lucide-react';
 import { useStore } from '../../state/Store';
-import { Button } from '../../components/ui';
+import { PageHeader, SectionHeader, StatRow, ChannelArt } from '../../components/ui';
 
 export default function BrandProfile() {
-  const { brand } = useStore();
-  return (
-    <div className="space-y-5 max-w-3xl">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-ink-900">Company profile</h1>
-          <p className="text-sm text-ink-500">How creators see your brand.</p>
-        </div>
-        <Link to="/brand/profile/edit" className="btn btn-secondary btn-md">
-          <Pencil className="w-4 h-4" /> Edit
-        </Link>
-      </div>
+  const { brand, campaigns } = useStore();
+  const mine = campaigns.filter((c) => c.brandId === brand.id);
+  const published = mine.filter((c) => c.status === 'published').length;
+  const draft = mine.filter((c) => c.status === 'draft').length;
+  const closed = mine.filter((c) => c.status === 'closed').length;
 
-      <div className="card p-6">
-        <div className="flex items-start gap-4">
-          <div className="w-16 h-16 rounded-xl bg-brand-500 text-white flex items-center justify-center font-bold text-xl">
-            {brand.companyName.split(' ').map((s) => s[0]).slice(0, 2).join('')}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-bold text-ink-900">{brand.companyName}</h2>
-            <div className="text-sm text-ink-500">{brand.industry}</div>
+  return (
+    <div className="space-y-6 max-w-3xl">
+      <PageHeader
+        eyebrow="Profile"
+        title="Company profile"
+        description="How creators see your brand across the marketplace."
+        action={
+          <Link to="/brand/profile/edit" className="btn btn-primary btn-md">
+            <Pencil className="w-4 h-4" /> Edit profile
+          </Link>
+        }
+      />
+
+      <div className="card overflow-hidden">
+        <ChannelArt name={brand.companyName} seed={brand.id} height={120} className="rounded-none" />
+        <div className="p-5 sm:p-6 flex items-end gap-4 -mt-10 sm:-mt-12">
+          <ChannelArt name={brand.companyName} seed={brand.id} height={72} className="w-20 sm:w-24 rounded-md ring-4 ring-paper-50 shrink-0" />
+          <div className="min-w-0 pb-1 flex-1">
+            <h1 className="font-display text-2xl sm:text-3xl text-ink-900 leading-none tracking-[-0.02em]">
+              {brand.companyName}
+            </h1>
+            <div className="text-sm text-ink-500 mt-1.5">{brand.industry}</div>
             {brand.website && (
-              <a href={brand.website} target="_blank" rel="noreferrer noopener" className="mt-2 text-sm text-brand-600 hover:underline inline-flex items-center gap-1">
+              <a
+                href={brand.website}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="mt-2 text-sm text-ember-600 hover:text-ember-700 inline-flex items-center gap-1 font-semibold"
+              >
                 <ExternalLink className="w-3.5 h-3.5" /> {brand.website}
               </a>
             )}
           </div>
         </div>
-        <div className="mt-5">
-          <div className="text-sm font-semibold text-ink-900 mb-1">About</div>
-          <p className="text-sm text-ink-700 leading-relaxed">{brand.about}</p>
-        </div>
       </div>
+
+      <StatRow
+        items={[
+          { label: 'Campaigns', value: mine.length, hint: 'all time' },
+          { label: 'Live', value: published, hint: 'accepting' },
+          { label: 'Drafts', value: draft, hint: 'not live' },
+          { label: 'Closed', value: closed, hint: 'wrapped up' },
+        ]}
+      />
+
+      <section className="card p-5 sm:p-6">
+        <SectionHeader eyebrow="About" title="What we do" />
+        <p className="mt-4 text-ink-700 leading-relaxed text-[15px] whitespace-pre-line">
+          {brand.about || '—'}
+        </p>
+      </section>
     </div>
   );
 }

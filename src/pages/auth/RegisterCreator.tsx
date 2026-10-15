@@ -38,7 +38,7 @@ export default function RegisterCreator() {
     <AuthShell
       title="Microwork"
       subtitle="Sign up as a creator — set up your profile to apply to brand campaigns."
-      footer={<>Have an account? <Link to="/login" className="text-brand-600 hover:underline">Log in</Link></>}
+      footer={<>Have an account? <Link to="/login" className="text-ember-600 hover:text-ember-700 font-semibold">Log in</Link></>}
       variant="creator"
     >
       <form onSubmit={submit} noValidate>

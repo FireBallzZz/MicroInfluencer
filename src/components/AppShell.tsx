@@ -13,98 +13,51 @@ import {
   Building2,
   Menu,
   X,
-  Sparkles,
   ChevronDown,
   CheckCircle2,
   ArrowRight,
+  Filter,
+  Command,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { useAuth } from '../state/AuthContext';
 import { useStore, markAllNotificationsRead, markNotificationRead } from '../state/Store';
-import { fmtRelativeTime, currency } from '../data/seed';
-import type { AppNotification } from '../types';
+import { fmtRelativeTime } from '../data/seed';
+import type { AppNotification, Role } from '../types';
 import { useAnimatedOpen } from './useAnimatedOpen';
+import { Avatar } from './ui';
 
 const creatorNav = [
-  { to: '/creator/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/creator/profile', label: 'Profile', icon: User },
-  { to: '/creator/campaigns', label: 'Find work', icon: Compass },
-  { to: '/creator/applications', label: 'My proposals', icon: ListChecks },
-  { to: '/creator/accounts', label: 'Connected accounts', icon: Link2 },
-];
+  { to: '/creator/dashboard',    label: 'Dashboard',   icon: LayoutDashboard, end: true  },
+  { to: '/creator/profile',      label: 'Profile',     icon: User,            end: false },
+  { to: '/creator/campaigns',    label: 'Find work',   icon: Compass,         end: false },
+  { to: '/creator/applications', label: 'My proposals',icon: ListChecks,      end: false },
+  { to: '/creator/accounts',     label: 'Connected accounts', icon: Link2,    end: false },
+] as const;
 
 const brandNav = [
-  { to: '/brand/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/brand/creators', label: 'Find creators', icon: Search },
-  { to: '/brand/campaigns', label: 'My campaigns', icon: Megaphone },
-  { to: '/brand/campaigns/create', label: 'Create campaign', icon: Plus },
-  { to: '/brand/profile', label: 'Company profile', icon: Building2 },
-];
+  { to: '/brand/dashboard',         label: 'Dashboard',       icon: LayoutDashboard, end: true  },
+  { to: '/brand/creators',          label: 'Find creators',   icon: Search,           end: false },
+  { to: '/brand/campaigns',         label: 'My campaigns',    icon: Megaphone,        end: false },
+  { to: '/brand/campaigns/create',  label: 'Create campaign', icon: Plus,             end: false },
+  { to: '/brand/profile',           label: 'Company profile', icon: Building2,        end: false },
+] as const;
 
-// Header quick-action lists (per role)
-const quickActionsByRole = {
+const quickActionsByRole: Record<Role, Array<{ label: string; hint: string; to: string; icon: any; accent: 'ink' | 'ember' | 'sky' | 'amber' | 'rose' }>> = {
   creator: [
-    {
-      label: 'Apply to a campaign',
-      hint: 'Browse briefs that fit your niche',
-      to: '/creator/campaigns',
-      icon: Compass,
-      accent: 'bg-brand-50 text-brand-700',
-    },
-    {
-      label: 'Update your profile',
-      hint: 'Stand out to brands',
-      to: '/creator/profile/edit',
-      icon: User,
-      accent: 'bg-sky-50 text-sky-700',
-    },
-    {
-      label: 'Reconnect YouTube',
-      hint: 'Keep your stats verified',
-      to: '/creator/accounts',
-      icon: Link2,
-      accent: 'bg-rose-50 text-rose-700',
-    },
-    {
-      label: 'Review your proposals',
-      hint: 'Track status and withdraw',
-      to: '/creator/applications',
-      icon: ListChecks,
-      accent: 'bg-amber-50 text-amber-700',
-    },
+    { label: 'Find work',         hint: 'Browse briefs that fit your niche', to: '/creator/campaigns',    icon: Compass,   accent: 'ember' },
+    { label: 'Update your profile',hint: 'Stand out to brands',              to: '/creator/profile/edit', icon: User,      accent: 'sky' },
+    { label: 'Reconnect YouTube', hint: 'Keep your stats verified',         to: '/creator/accounts',     icon: Link2,     accent: 'rose' },
+    { label: 'Review proposals',  hint: 'Track status and withdraw',        to: '/creator/applications', icon: ListChecks,accent: 'amber' },
   ],
   brand: [
-    {
-      label: 'Create a campaign',
-      hint: 'Reach creators in your niche',
-      to: '/brand/campaigns/create',
-      icon: Plus,
-      accent: 'bg-brand-50 text-brand-700',
-    },
-    {
-      label: 'Find creators',
-      hint: 'Search by niche, platform, audience',
-      to: '/brand/creators',
-      icon: Search,
-      accent: 'bg-sky-50 text-sky-700',
-    },
-    {
-      label: 'Review proposals',
-      hint: 'Shortlist, accept, reject',
-      to: '/brand/campaigns',
-      icon: Megaphone,
-      accent: 'bg-amber-50 text-amber-700',
-    },
-    {
-      label: 'Edit company profile',
-      hint: 'How creators see you',
-      to: '/brand/profile/edit',
-      icon: Building2,
-      accent: 'bg-ink-100 text-ink-700',
-    },
+    { label: 'Create a campaign', hint: 'Reach creators in your niche',     to: '/brand/campaigns/create', icon: Plus,        accent: 'ember' },
+    { label: 'Find creators',     hint: 'Search by niche, platform, audience', to: '/brand/creators',     icon: Search,      accent: 'sky' },
+    { label: 'Review proposals',  hint: 'Shortlist, accept, reject',        to: '/brand/campaigns',       icon: Megaphone,   accent: 'amber' },
+    { label: 'Edit company profile', hint: 'How creators see you',           to: '/brand/profile/edit',    icon: Building2,   accent: 'ink' },
   ],
-} as const;
+};
 
 export default function AppShell() {
   const { user, logout } = useAuth();
@@ -112,12 +65,10 @@ export default function AppShell() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Close drawer on route change
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
 
-  // Close on Esc + lock body scroll while open (mobile drawer)
   useEffect(() => {
     if (!sidebarOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -137,30 +88,43 @@ export default function AppShell() {
   const quickActions = quickActionsByRole[user.role];
 
   return (
-    <div className="min-h-screen bg-ink-50">
-      {/* Top bar */}
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-ink-200">
+    <div className="min-h-screen bg-paper-100/40">
+      <header className="sticky top-0 z-30 bg-paper-50/90 backdrop-blur-md border-b border-ink-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center gap-2 sm:gap-4">
           <button
-            className="lg:hidden p-2 -ml-2 text-ink-700"
+            className="lg:hidden p-2 -ml-2 text-ink-700 rounded-md hover:bg-ink-100/60"
             onClick={() => setSidebarOpen((o) => !o)}
             aria-label="Toggle navigation"
           >
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-          <Link to={user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard'} className="flex items-center gap-2 shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold text-ink-900 text-lg tracking-tight hidden sm:inline">Microwork</span>
+
+          <Link
+            to={user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard'}
+            className="flex items-center gap-2 shrink-0"
+            aria-label="Microwork home"
+          >
+            <span className="inline-flex items-center justify-center w-7 h-7 bg-ink-900 text-paper-50 rounded-sm">
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" aria-hidden>
+                <path
+                  d="M3 19V5h2.5L12 14 18.5 5H21v14h-2.5V10.6L13 18h-2L5 10.6V19H3z"
+                  fill="currentColor"
+                />
+              </svg>
+            </span>
+            <span className="font-display text-[17px] font-semibold leading-none tracking-[-0.02em] text-ink-900 hidden sm:inline">
+              Microwork
+            </span>
           </Link>
+
           <div className="hidden md:flex flex-1 max-w-md ml-4">
             <GlobalSearch role={user.role} />
           </div>
           <div className="flex-1 md:hidden" />
+
           <div className="flex items-center gap-1 sm:gap-2">
             <div className="hidden sm:block">
-              <QuickActionsButton actions={[...quickActions]} />
+              <QuickActionsButton actions={quickActions} />
             </div>
             <NotificationBell />
             <UserMenu onLogout={() => { logout(); navigate('/'); }} />
@@ -168,52 +132,131 @@ export default function AppShell() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-6 py-6">
-        {/* Sidebar */}
-        <aside
-          className={clsx(
-            'lg:w-60 lg:shrink-0',
-            'fixed lg:static inset-y-0 left-0 z-40 w-72 lg:w-60 bg-white border-r border-ink-200 lg:border-0 lg:bg-transparent',
-            'transform transition-transform duration-200 lg:transition-none lg:translate-x-0',
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          )}
-        >
-          <div className="h-full lg:bg-white lg:rounded-2xl lg:border lg:border-ink-100 p-3 lg:shadow-card overflow-y-auto">
-            <nav className="flex flex-col gap-1">
-              {nav.map((item, i) => (
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex gap-6 py-5 sm:py-6">
+        {/* Sidebar — desktop */}
+        <aside className="hidden lg:block w-60 shrink-0">
+          <div className="sticky top-[88px] card p-2">
+            <div className="px-3 py-2 mb-1.5 flex items-center justify-between">
+              <span className="eyebrow">{user.role === 'creator' ? 'Creator' : 'Brand'}</span>
+              <span className="font-mono text-[10px] text-ink-400">v0.2</span>
+            </div>
+            <nav className="flex flex-col">
+              {nav.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  end={item.to.endsWith('dashboard')}
+                  end={item.end}
                   className={({ isActive }) =>
-                    clsx(
-                      'anim-item-in flex items-center gap-3 px-3 py-2 rounded-full text-sm font-semibold transition-colors',
-                      isActive ? 'nav-pill-active' : 'nav-pill'
-                    )
+                    clsx('nav-item group', isActive && 'nav-item-active')
                   }
-                  style={{ animationDelay: `${i * 40}ms` }}
                 >
-                  <item.icon className="w-4 h-4" />
-                  {item.label}
+                  <item.icon className="w-4 h-4 text-ink-500 group-[.nav-item-active]:text-ink-900" />
+                  <span className="truncate">{item.label}</span>
                 </NavLink>
               ))}
             </nav>
-            <div className="my-3 border-t border-ink-100" />
-            <NavLink
+            <div className="my-2 border-t border-ink-200/70" />
+            <Link
               to="/"
-              className="flex items-center gap-3 px-3 py-2 rounded-full text-sm font-semibold text-ink-700 hover:bg-ink-100 transition-colors"
+              className="nav-item"
             >
-              <LogOut className="w-4 h-4" />
-              Switch demo role
-            </NavLink>
+              <LogOut className="w-4 h-4 text-ink-500" />
+              <span>Switch demo role</span>
+            </Link>
           </div>
         </aside>
+
+        {/* Mobile drawer */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 z-30 bg-ink-900/30 lg:hidden animate-in"
+            className="fixed inset-0 z-30 bg-ink-900/40 anim-fade-in lg:hidden"
             onClick={() => setSidebarOpen(false)}
+            aria-hidden
           />
         )}
+        <aside
+          className={clsx(
+            'fixed lg:hidden inset-y-0 left-0 z-40 w-72 bg-paper-50 border-r border-ink-200',
+            'transform transition-transform duration-300 ease-out-quint',
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full',
+          )}
+          aria-label="Primary"
+        >
+          <div className="h-16 flex items-center justify-between px-4 border-b border-ink-200">
+            <Link
+              to={user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard'}
+              onClick={() => setSidebarOpen(false)}
+              className="flex items-center gap-2"
+            >
+              <span className="inline-flex items-center justify-center w-7 h-7 bg-ink-900 text-paper-50 rounded-sm">
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" aria-hidden>
+                  <path d="M3 19V5h2.5L12 14 18.5 5H21v14h-2.5V10.6L13 18h-2L5 10.6V19H3z" fill="currentColor" />
+                </svg>
+              </span>
+              <span className="font-display text-[17px] font-semibold tracking-[-0.02em] text-ink-900">
+                Microwork
+              </span>
+            </Link>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Close navigation"
+              className="p-2 -mr-2 text-ink-700 rounded-md hover:bg-ink-100/60"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="p-3 overflow-y-auto h-[calc(100vh-64px)]">
+            <div className="px-3 py-2 mb-1.5 flex items-center justify-between">
+              <span className="eyebrow">{user.role === 'creator' ? 'Creator' : 'Brand'}</span>
+            </div>
+            <nav className="flex flex-col">
+              {nav.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  onClick={() => setSidebarOpen(false)}
+                  className={({ isActive }) =>
+                    clsx('nav-item group', isActive && 'nav-item-active')
+                  }
+                >
+                  <item.icon className="w-4 h-4 text-ink-500 group-[.nav-item-active]:text-ink-900" />
+                  <span className="truncate">{item.label}</span>
+                </NavLink>
+              ))}
+            </nav>
+            <div className="my-2 border-t border-ink-200" />
+            <Link to="/" onClick={() => setSidebarOpen(false)} className="nav-item">
+              <LogOut className="w-4 h-4 text-ink-500" />
+              <span>Switch demo role</span>
+            </Link>
+            <div className="mt-4 pt-3 border-t border-ink-200">
+              <div className="px-3 mb-2 eyebrow">Quick actions</div>
+              <div className="flex flex-col">
+                {quickActions.map((a) => (
+                  <Link
+                    key={a.to}
+                    to={a.to}
+                    onClick={() => setSidebarOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm hover:bg-paper-100"
+                  >
+                    <span className={clsx(
+                      'w-7 h-7 rounded-md flex items-center justify-center shrink-0',
+                      a.accent === 'ember' ? 'bg-ember-50 text-ember-700'
+                      : a.accent === 'sky' ? 'bg-sky-50 text-sky-700'
+                      : a.accent === 'amber' ? 'bg-amber-50 text-amber-700'
+                      : a.accent === 'rose' ? 'bg-rose-50 text-rose-600'
+                      : 'bg-ink-100 text-ink-700'
+                    )}>
+                      <a.icon className="w-3.5 h-3.5" />
+                    </span>
+                    <span className="text-ink-700 font-semibold truncate">{a.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        </aside>
 
         <main key={location.pathname} className="flex-1 min-w-0 anim-page-in">
           <Outlet />
@@ -235,25 +278,28 @@ function GlobalSearch({ role }: { role: 'creator' | 'brand' }) {
       }}
       className="w-full"
     >
+      <label className="sr-only" htmlFor="global-search">Search</label>
       <div className="relative group">
-        <Search className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2 transition-colors group-focus-within:text-brand-600" />
+        <Search className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2 transition-colors group-focus-within:text-ink-900" />
         <input
+          id="global-search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={role === 'creator' ? 'Search campaigns' : 'Search creators'}
-          className="input pl-9"
+          className="input pl-9 pr-12 h-10"
         />
+        <kbd className="hidden lg:inline-flex items-center gap-1 absolute right-2 top-1/2 -translate-y-1/2 font-mono text-[10px] text-ink-400 border border-ink-200 rounded-sm px-1.5 h-6">
+          <Command className="w-3 h-3" />K
+        </kbd>
       </div>
     </form>
   );
 }
 
-/* -------- Quick Actions (click button -> animated list appears) -------- */
-
 function QuickActionsButton({
   actions,
 }: {
-  actions: { label: string; hint: string; to: string; icon: any; accent: string }[];
+  actions: Array<{ label: string; hint: string; to: string; icon: any; accent: 'ink' | 'ember' | 'sky' | 'amber' | 'rose' }>;
 }) {
   const { open, setOpen, mounted } = useAnimatedOpen(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -286,33 +332,39 @@ function QuickActionsButton({
         <div
           role="menu"
           className={clsx(
-            'absolute right-0 mt-2 w-80 bg-white border border-ink-200 rounded-2xl shadow-pop overflow-hidden z-50',
+            'absolute right-0 mt-2 w-80 bg-paper-50 border border-ink-200 rounded-[14px] shadow-pop overflow-hidden z-50',
             open ? 'anim-pop-in' : 'anim-pop-out pointer-events-none'
           )}
           style={{ transformOrigin: 'top right' }}
         >
-          <div className="px-4 py-3 border-b border-ink-100">
-            <div className="text-xs uppercase tracking-wide text-ink-500 font-semibold">Quick actions</div>
-            <div className="text-xs text-ink-400 mt-0.5">Jump straight to the next thing</div>
+          <div className="px-4 py-3 border-b border-ink-200">
+            <div className="eyebrow">Quick actions</div>
+            <div className="text-xs text-ink-500 mt-0.5">Jump straight to the next thing</div>
           </div>
           <ul className="max-h-80 overflow-y-auto p-2">
-            {actions.map((a, i) => (
+            {actions.map((a) => (
               <li key={a.to}>
                 <Link
                   to={a.to}
                   onClick={() => setOpen(false)}
                   role="menuitem"
-                  className="group flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-ink-50 transition-colors"
-                  style={{ animationDelay: `${i * 30}ms` }}
+                  className="group flex items-center gap-3 px-2 py-2.5 rounded-md hover:bg-paper-100 transition-colors"
                 >
-                  <div className={clsx('w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105', a.accent)}>
+                  <span className={clsx(
+                    'w-9 h-9 rounded-md flex items-center justify-center shrink-0 transition-transform group-hover:scale-105',
+                    a.accent === 'ember' ? 'bg-ember-50 text-ember-700'
+                    : a.accent === 'sky' ? 'bg-sky-50 text-sky-700'
+                    : a.accent === 'amber' ? 'bg-amber-50 text-amber-700'
+                    : a.accent === 'rose' ? 'bg-rose-50 text-rose-600'
+                    : 'bg-ink-100 text-ink-700'
+                  )}>
                     <a.icon className="w-4 h-4" />
-                  </div>
+                  </span>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-semibold text-ink-900 truncate">{a.label}</div>
                     <div className="text-xs text-ink-500 truncate">{a.hint}</div>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-ink-300 group-hover:text-brand-600 group-hover:translate-x-0.5 transition-all" />
+                  <ArrowRight className="w-4 h-4 text-ink-300 group-hover:text-ember-600 group-hover:translate-x-0.5 transition-all" />
                 </Link>
               </li>
             ))}
@@ -322,8 +374,6 @@ function QuickActionsButton({
     </div>
   );
 }
-
-/* -------- User Menu -------- */
 
 function UserMenu({ onLogout }: { onLogout: () => void }) {
   const { user } = useAuth();
@@ -339,43 +389,41 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
   }, [setOpen]);
 
   if (!user) return null;
-  const initials = user.fullName
-    .split(' ')
-    .map((s) => s[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
 
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 p-1 rounded-full hover:bg-ink-100 transition-colors"
+        className="flex items-center gap-1.5 p-1 rounded-md hover:bg-ink-100/60 transition-colors"
         aria-expanded={open}
+        aria-label="User menu"
       >
-        <div className="w-8 h-8 rounded-full bg-brand-500 text-white flex items-center justify-center text-xs font-semibold ring-2 ring-white">
-          {initials}
-        </div>
+        <Avatar name={user.fullName} size="sm" tone="ink" />
         <ChevronDown className={clsx('w-3.5 h-3.5 text-ink-500 transition-transform duration-200 hidden sm:block', open && 'rotate-180')} />
       </button>
       {mounted && (
         <div
           className={clsx(
-            'absolute right-0 mt-2 w-64 bg-white border border-ink-200 rounded-2xl shadow-pop overflow-hidden z-50',
+            'absolute right-0 mt-2 w-64 bg-paper-50 border border-ink-200 rounded-[14px] shadow-pop overflow-hidden z-50',
             open ? 'anim-pop-in' : 'anim-pop-out pointer-events-none'
           )}
           style={{ transformOrigin: 'top right' }}
         >
-          <div className="px-4 py-3 border-b border-ink-100">
-            <div className="text-sm font-semibold text-ink-900 truncate">{user.fullName}</div>
-            <div className="text-xs text-ink-500 truncate">{user.email}</div>
+          <div className="px-4 py-3 border-b border-ink-200">
+            <div className="flex items-center gap-2.5">
+              <Avatar name={user.fullName} size="sm" tone="ink" />
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-ink-900 truncate">{user.fullName}</div>
+                <div className="text-xs text-ink-500 truncate">{user.email}</div>
+              </div>
+            </div>
           </div>
           <ul className="p-1.5">
             <li>
               <Link
                 to={user.role === 'creator' ? '/creator/profile' : '/brand/profile'}
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-ink-50 text-ink-700 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-paper-100 text-ink-700 transition-colors"
               >
                 <User className="w-4 h-4" /> View profile
               </Link>
@@ -384,19 +432,19 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
               <Link
                 to={user.role === 'creator' ? '/creator/notifications' : '/brand/notifications'}
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-ink-50 text-ink-700 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-paper-100 text-ink-700 transition-colors"
               >
                 <Bell className="w-4 h-4" /> Notifications
               </Link>
             </li>
           </ul>
-          <div className="border-t border-ink-100 p-1.5">
+          <div className="border-t border-ink-200 p-1.5">
             <button
               onClick={() => {
                 setOpen(false);
                 onLogout();
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-ink-50 text-ink-700 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-paper-100 text-ink-700 transition-colors"
             >
               <LogOut className="w-4 h-4" /> Switch demo role
             </button>
@@ -406,8 +454,6 @@ function UserMenu({ onLogout }: { onLogout: () => void }) {
     </div>
   );
 }
-
-/* -------- Notification Bell -------- */
 
 function NotificationBell() {
   const { user } = useAuth();
@@ -430,12 +476,12 @@ function NotificationBell() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="relative p-2 rounded-full hover:bg-ink-100 text-ink-700 transition-colors"
-        aria-label="Notifications"
+        className="relative p-2 rounded-md hover:bg-ink-100/60 text-ink-700 transition-colors"
+        aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`}
       >
         <Bell className="w-5 h-5" />
         {unread > 0 && (
-          <span className="absolute top-0.5 right-0.5 bg-rose-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 ring-2 ring-white">
+          <span className="absolute top-0.5 right-0.5 bg-ember-500 text-paper-50 text-[10px] font-semibold rounded-sm min-w-[18px] h-[18px] flex items-center justify-center px-1">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
@@ -443,18 +489,18 @@ function NotificationBell() {
       {mounted && (
         <div
           className={clsx(
-            'absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-ink-200 rounded-2xl shadow-pop overflow-hidden z-50',
+            'absolute right-0 mt-2 w-[min(92vw,24rem)] sm:w-96 bg-paper-50 border border-ink-200 rounded-[14px] shadow-pop overflow-hidden z-50',
             open ? 'anim-pop-in' : 'anim-pop-out pointer-events-none'
           )}
           style={{ transformOrigin: 'top right' }}
         >
-          <div className="flex items-center justify-between px-4 py-3 border-b border-ink-100">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-ink-200">
             <div>
-              <div className="text-sm font-semibold text-ink-900">Notifications</div>
-              <div className="text-xs text-ink-500">{unread} unread</div>
+              <div className="eyebrow">Notifications</div>
+              <div className="text-xs text-ink-500 mt-0.5">{unread} unread</div>
             </div>
             <button
-              className="text-xs text-brand-600 hover:text-brand-700 hover:underline disabled:opacity-50 disabled:hover:no-underline transition-colors"
+              className="text-xs text-ember-600 hover:text-ember-700 hover:underline disabled:opacity-50 disabled:hover:no-underline transition-colors font-semibold"
               onClick={() => markAllNotificationsRead()}
               disabled={unread === 0}
             >
@@ -469,14 +515,14 @@ function NotificationBell() {
               </div>
             ) : (
               <ul>
-                {notifications.slice(0, 10).map((n) => (
+                {notifications.slice(0, 8).map((n) => (
                   <li key={n.id}>
                     <NotificationRow
                       n={n}
                       onClick={() => {
                         markNotificationRead(n.id);
                         setOpen(false);
-                        if (n.link) window.location.assign(n.link);
+                        if (n.link) navigate(n.link);
                       }}
                     />
                   </li>
@@ -484,11 +530,11 @@ function NotificationBell() {
               </ul>
             )}
           </div>
-          <div className="border-t border-ink-100 px-4 py-2 text-center">
+          <div className="border-t border-ink-200 px-4 py-2 text-center">
             <Link
               to={user.role === 'creator' ? '/creator/notifications' : '/brand/notifications'}
               onClick={() => setOpen(false)}
-              className="text-xs text-brand-600 hover:underline"
+              className="text-xs text-ink-700 hover:text-ink-900 font-semibold"
             >
               View all notifications
             </Link>
@@ -497,6 +543,10 @@ function NotificationBell() {
       )}
     </div>
   );
+
+  function navigate(url: string) {
+    window.location.assign(url);
+  }
 }
 
 function NotificationRow({ n, onClick }: { n: AppNotification; onClick: () => void }) {
@@ -504,16 +554,18 @@ function NotificationRow({ n, onClick }: { n: AppNotification; onClick: () => vo
     <button
       onClick={onClick}
       className={clsx(
-        'w-full text-left px-4 py-3 border-b border-ink-50 hover:bg-ink-50 flex gap-3 transition-colors',
-        !n.read && 'bg-brand-50/40'
+        'w-full text-left px-4 py-3 border-b border-ink-200/60 hover:bg-paper-100 flex gap-3 transition-colors',
+        !n.read && 'bg-ember-50/40',
       )}
     >
-      <div className={clsx('mt-1.5 w-2 h-2 rounded-full shrink-0', n.read ? 'bg-transparent' : 'bg-brand-500')} />
+      <div className={clsx('mt-1.5 w-2 h-2 rounded-sm shrink-0', n.read ? 'bg-transparent' : 'bg-ember-500')} />
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-ink-900 truncate">{n.title}</div>
-        <div className="text-xs text-ink-600 line-clamp-2">{n.description}</div>
-        <div className="text-[11px] text-ink-400 mt-0.5">{fmtRelativeTime(n.createdAt)}</div>
+        <div className="text-sm font-semibold text-ink-900 truncate">{n.title}</div>
+        <div className="text-xs text-ink-500 line-clamp-2 mt-0.5">{n.description}</div>
+        <div className="text-[11px] text-ink-400 mt-1 font-mono uppercase tracking-[0.12em]">{fmtRelativeTime(n.createdAt)}</div>
       </div>
     </button>
   );
 }
+
+export { Filter };

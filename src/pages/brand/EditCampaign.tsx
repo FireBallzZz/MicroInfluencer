@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { CampaignForm, validateCampaign } from './CampaignForm';
 import type { CampaignFormValues } from './CampaignForm';
 import { updateCampaign, useStore } from '../../state/Store';
-import { Button } from '../../components/ui';
+import { Button, PageHeader } from '../../components/ui';
 import { useToast } from '../../state/ToastContext';
 
 export default function EditCampaign() {
@@ -26,13 +26,21 @@ export default function EditCampaign() {
   } : null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  if (!c || !values) return <div className="card p-6">Campaign not found.</div>;
+  if (!c || !values) {
+    return (
+      <div className="card p-6 max-w-xl">
+        <h1 className="font-display text-lg text-ink-900">Campaign not found</h1>
+        <p className="text-sm text-ink-500 mt-1">It may have been deleted.</p>
+        <Button className="mt-4" onClick={() => navigate('/brand/campaigns')}>Back to campaigns</Button>
+      </div>
+    );
+  }
 
   if (c.status !== 'draft') {
     return (
       <div className="card p-6 max-w-xl">
-        <h1 className="text-lg font-bold text-ink-900">Editing is locked</h1>
-        <p className="text-sm text-ink-600 mt-1">Published and closed campaigns can’t be edited.</p>
+        <h1 className="font-display text-lg text-ink-900">Editing is locked</h1>
+        <p className="text-sm text-ink-500 mt-1">Published and closed campaigns can’t be edited.</p>
         <Button className="mt-4" onClick={() => navigate(`/brand/campaigns/${c.id}`)}>Back to campaign</Button>
       </div>
     );
@@ -51,12 +59,16 @@ export default function EditCampaign() {
   };
 
   return (
-    <div className="space-y-5 max-w-3xl">
-      <h1 className="text-2xl font-bold text-ink-900">Edit campaign</h1>
+    <div className="space-y-6 max-w-3xl">
+      <PageHeader
+        eyebrow="Edit"
+        title="Edit campaign"
+        description="Changes apply to this draft. You can publish it when ready."
+      />
       <CampaignForm values={values} onChange={setValues} errors={errors} />
-      <div className="flex justify-end gap-2">
-        <Button variant="secondary" onClick={() => navigate(`/brand/campaigns/${c.id}`)}>Cancel</Button>
-        <Button onClick={save}>Save draft</Button>
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
+        <Button variant="ghost" onClick={() => navigate('/brand/campaigns')}>Cancel</Button>
+        <Button onClick={save}>Save changes</Button>
       </div>
     </div>
   );

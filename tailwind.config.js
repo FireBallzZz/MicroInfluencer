@@ -21,8 +21,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Editorial duo-tone: deep ink + warm paper, with one confident accent.
-        // Avoids the overused "SaaS teal + violet" AI palette.
+        // Editorial duo-tone: warm paper canvas + deep ink type, one warm
+        // ember accent. Avoids the overused "SaaS teal + violet" palette.
         ink: {
           50:  '#F4F2EC',
           100: '#E8E4D9',
@@ -52,9 +52,7 @@ export default {
           600: '#9A3F1F',
           700: '#7A311A',
         },
-        // Legacy aliases — existing dashboard/auth pages still reference
-        // `brand-*` and the old `text-white` accents. Route them to the
-        // new accent so the visual language stays consistent everywhere.
+        // Legacy alias — used across dashboards. Points to ember.
         brand: {
           50:  '#FBEEE6',
           100: '#F4D6C2',
@@ -79,6 +77,7 @@ export default {
         card: '0 1px 0 rgba(11,10,8,.04), 0 1px 2px rgba(11,10,8,.04)',
         pop:  '0 14px 40px -16px rgba(11,10,8,.18), 0 2px 6px rgba(11,10,8,.05)',
         ring: 'inset 0 0 0 1px rgba(11,10,8,.06)',
+        'ember-glow': '0 0 0 3px rgba(184,80,43,.18)',
       },
       borderRadius: {
         xl:   '10px',
@@ -94,6 +93,8 @@ export default {
       backgroundImage: {
         'noise-soft':
           "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .04 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+        'editorial-grid':
+          "linear-gradient(to right, rgba(11,10,8,.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(11,10,8,.05) 1px, transparent 1px)",
       },
       keyframes: {
         'fade-up': {
@@ -104,27 +105,45 @@ export default {
           '0%':   { opacity: '0' },
           '100%': { opacity: '1' },
         },
+        'pop-in': {
+          '0%':   { opacity: '0', transform: 'translateY(-4px) scale(.98)' },
+          '100%': { opacity: '1', transform: 'translateY(0)    scale(1)' },
+        },
+        'pop-out': {
+          '0%':   { opacity: '1', transform: 'translateY(0)    scale(1)' },
+          '100%': { opacity: '0', transform: 'translateY(-4px) scale(.98)' },
+        },
+        'item-in': {
+          '0%':   { opacity: '0', transform: 'translateY(6px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
         marquee: {
           '0%':   { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(-50%)' },
         },
-        ticker: {
-          '0%':   { transform: 'translateY(8px)', opacity: '0' },
-          '10%':  { transform: 'translateY(0)',   opacity: '1' },
-          '90%':  { transform: 'translateY(-2px)', opacity: '1' },
-          '100%': { transform: 'translateY(-8px)', opacity: '0' },
+        'pulse-soft': {
+          '0%, 100%': { opacity: '1' },
+          '50%':      { opacity: '.6' },
         },
         blink: {
           '0%, 100%': { opacity: '1' },
           '50%':      { opacity: '.25' },
         },
+        shimmer: {
+          '0%':   { backgroundPosition: '-200px 0' },
+          '100%': { backgroundPosition: '200px 0' },
+        },
       },
       animation: {
         'fade-up':  'fade-up .9s cubic-bezier(0.22, 1, 0.36, 1) both',
         'fade-in':  'fade-in 1.2s ease both',
-        marquee:    'marquee 40s linear infinite',
-        ticker:     'ticker 5.2s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'pop-in':   'pop-in 160ms cubic-bezier(0.22, 1, 0.36, 1) both',
+        'pop-out':  'pop-out 140ms cubic-bezier(0.22, 1, 0.36, 1) both',
+        'item-in':  'item-in .5s cubic-bezier(0.22, 1, 0.36, 1) both',
+        marquee:    'marquee 50s linear infinite',
+        'pulse-soft': 'pulse-soft 2.4s ease-in-out infinite',
         blink:      'blink 1.6s ease-in-out infinite',
+        shimmer:    'shimmer 1.4s linear infinite',
       },
     },
   },

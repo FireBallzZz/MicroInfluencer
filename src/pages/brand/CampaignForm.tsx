@@ -1,4 +1,4 @@
-import { FormField, Input, Textarea, Select } from '../../components/ui';
+import { FormField, Input, Textarea, Select, SectionHeader } from '../../components/ui';
 import type { Campaign, Niche, Platform } from '../../types';
 import { NICHES, PLATFORMS } from '../../data/seed';
 
@@ -20,31 +20,52 @@ export function CampaignForm({
 
   return (
     <div className="space-y-5">
-      <div className="card p-5">
-        <h3 className="text-sm font-semibold text-ink-900 mb-4">The basics</h3>
-        <FormField label="Campaign title" error={errors?.title}>
-          <Input value={values.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. Launch our new cold brew" invalid={!!errors?.title} />
-        </FormField>
-        <FormField label="Description" error={errors?.description} helper="Up to 2000 characters">
-          <Textarea rows={6} value={values.description} onChange={(e) => set('description', e.target.value)} placeholder="What’s the brief? What kind of creator are you looking for?" invalid={!!errors?.description} />
-        </FormField>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <FormField label="Category / niche" error={errors?.category}>
-            <Select value={values.category} onChange={(e) => set('category', e.target.value as Niche)} invalid={!!errors?.category}>
-              {NICHES.map((n) => <option key={n}>{n}</option>)}
-            </Select>
+      <section className="card p-5 sm:p-6">
+        <SectionHeader eyebrow="01" title="The basics" />
+        <div className="mt-5">
+          <FormField label="Campaign title" error={errors?.title}>
+            <Input
+              value={values.title}
+              onChange={(e) => set('title', e.target.value)}
+              placeholder="e.g. Launch our new cold brew"
+              invalid={!!errors?.title}
+            />
           </FormField>
-          <FormField label="Required platform" error={errors?.requiredPlatform}>
-            <Select value={values.requiredPlatform} onChange={(e) => set('requiredPlatform', e.target.value as Platform)} invalid={!!errors?.requiredPlatform}>
-              {PLATFORMS.map((p) => <option key={p}>{p}</option>)}
-            </Select>
+          <FormField label="Description" error={errors?.description} helper="Up to 2000 characters">
+            <Textarea
+              rows={6}
+              value={values.description}
+              onChange={(e) => set('description', e.target.value)}
+              placeholder="What’s the brief? What kind of creator are you looking for?"
+              invalid={!!errors?.description}
+            />
           </FormField>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <FormField label="Category / niche" error={errors?.category}>
+              <Select
+                value={values.category}
+                onChange={(e) => set('category', e.target.value as Niche)}
+                invalid={!!errors?.category}
+              >
+                {NICHES.map((n) => <option key={n}>{n}</option>)}
+              </Select>
+            </FormField>
+            <FormField label="Required platform" error={errors?.requiredPlatform}>
+              <Select
+                value={values.requiredPlatform}
+                onChange={(e) => set('requiredPlatform', e.target.value as Platform)}
+                invalid={!!errors?.requiredPlatform}
+              >
+                {PLATFORMS.map((p) => <option key={p}>{p}</option>)}
+              </Select>
+            </FormField>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="card p-5">
-        <h3 className="text-sm font-semibold text-ink-900 mb-4">Budget &amp; logistics</h3>
-        <div className="grid sm:grid-cols-2 gap-4">
+      <section className="card p-5 sm:p-6">
+        <SectionHeader eyebrow="02" title="Budget &amp; logistics" />
+        <div className="mt-5 grid sm:grid-cols-2 gap-4">
           <FormField label="Budget per creator (USD)" error={errors?.budgetPerCreator}>
             <Input
               type="number"
@@ -65,7 +86,7 @@ export function CampaignForm({
               invalid={!!errors?.applicationDeadline}
             />
           </FormField>
-          <FormField label="Creators needed (1-20)">
+          <FormField label="Creators needed (1–20)">
             <Input
               type="number"
               inputMode="numeric"
@@ -75,7 +96,7 @@ export function CampaignForm({
               onChange={(e) => set('creatorsNeeded', Math.max(1, Math.min(20, Number(e.target.value))))}
             />
           </FormField>
-          <FormField label="Minimum followers (optional)" helper="Leave blank to allow any follower count">
+          <FormField label="Minimum followers" optional helper="Leave blank to allow any follower count">
             <Input
               type="number"
               inputMode="numeric"
@@ -86,10 +107,15 @@ export function CampaignForm({
             />
           </FormField>
         </div>
-        <FormField label="Deliverables per creator" helper="Be specific ' creators want clarity">
-          <Textarea rows={3} value={values.deliverables} onChange={(e) => set('deliverables', e.target.value)} placeholder="e.g. 1 long-form video (8–12 min) + 1 short" />
+        <FormField label="Deliverables per creator" helper="Be specific — creators want clarity">
+          <Textarea
+            rows={3}
+            value={values.deliverables}
+            onChange={(e) => set('deliverables', e.target.value)}
+            placeholder="e.g. 1 long-form video (8–12 min) + 1 short"
+          />
         </FormField>
-      </div>
+      </section>
     </div>
   );
 }

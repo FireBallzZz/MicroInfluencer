@@ -23,7 +23,7 @@ export default function ForgotPassword() {
     <AuthShell
       title="Microwork"
       subtitle="Reset your password — enter the email tied to your account and we’ll send a 6-digit code."
-      footer={<><Link to="/login" className="text-brand-600 hover:underline">Back to log in</Link></>}
+      footer={<><Link to="/login" className="text-ember-600 hover:text-ember-700 font-semibold">Back to log in</Link></>}
     >
       {sent ? (
         <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-800">
