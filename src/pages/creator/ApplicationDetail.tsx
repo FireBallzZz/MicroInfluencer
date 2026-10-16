@@ -6,7 +6,7 @@ import {
   listMyDeliverables, addDeliverable, deleteDeliverable,
   type Deliverable,
 } from '../../api/endpoints';
-import { Button, ProposalStatusBadge, ChannelArt, SectionHeader, PageHeader, EmptyState } from '../../components/ui';
+import { Button, ProposalStatusBadge, SectionHeader, PageHeader, EmptyState } from '../../components/ui';
 import { ConfirmDialog, Modal } from '../../components/Modal';
 import { currency, fmtRelativeTime, fmtDate } from '../../data/seed';
 import { Textarea, Input, Select, FormField, Label } from '../../components/ui';

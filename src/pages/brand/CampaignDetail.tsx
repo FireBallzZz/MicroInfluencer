@@ -4,7 +4,7 @@ import {
   setCampaignStatus, deleteCampaign, useStore, loadBrandCampaigns, loadBrandProfile,
 } from '../../state/Store';
 import {
-  Button, CampaignStatusBadge, EmptyState, ChannelArt, StatRow, SectionHeader,
+  Button, CampaignStatusBadge, EmptyState, StatRow, SectionHeader,
   PageHeader, ProposalStatusBadge, Avatar,
 } from '../../components/ui';
 import { currency, fmtDate } from '../../data/seed';
@@ -74,10 +74,8 @@ export default function CampaignDetailBrand() {
         <ArrowLeft className="w-4 h-4" /> Back to campaigns
       </Link>
 
-      <header className="card overflow-hidden">
-        <ChannelArt name={c.title} seed={c.id} height={96} className="rounded-none" />
-        <div className="p-5 sm:p-6 -mt-8 sm:-mt-10">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+      <header className="card p-5 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <CampaignStatusBadge status={c.status} />
@@ -122,7 +120,6 @@ export default function CampaignDetailBrand() {
             </div>
           </div>
           <p className="text-[15px] text-ink-700 mt-4 whitespace-pre-line leading-relaxed">{c.description}</p>
-        </div>
       </header>
 
       <StatRow

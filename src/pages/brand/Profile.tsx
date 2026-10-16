@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Pencil, ExternalLink } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useStore, loadBrandProfile, loadBrandCampaigns } from '../../state/Store';
-import { PageHeader, SectionHeader, StatRow, ChannelArt } from '../../components/ui';
+import { PageHeader, SectionHeader, StatRow } from '../../components/ui';
 
 export default function BrandProfile() {
   const { brand, campaigns } = useStore();
@@ -58,23 +58,24 @@ export default function BrandProfile() {
         }
       />
 
-      <div className="card overflow-hidden">
-        {brand.coverUrl ? (
-          <img src={brand.coverUrl} alt="Cover" className="w-full h-[160px] sm:h-[200px] object-cover" />
-        ) : (
-          <ChannelArt name={brand.companyName} seed={brand.id} height={120} className="rounded-none w-full" />
-        )}
-        <div className="p-5 sm:p-6 flex items-end gap-4 -mt-10 sm:-mt-12">
+      <div className="card p-6 sm:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-5">
           {brand.logoUrl ? (
-            <img src={brand.logoUrl} alt={brand.companyName} className="w-20 sm:w-24 h-20 sm:h-24 rounded-md object-cover ring-4 ring-paper-50 shrink-0" />
+            <img
+              src={brand.logoUrl}
+              alt={brand.companyName}
+              className="w-20 sm:w-24 h-20 sm:h-24 rounded-2xl object-contain bg-paper-100 p-2 ring-4 ring-paper-100 border border-ink-200 shrink-0 shadow-sm"
+            />
           ) : (
-            <ChannelArt name={brand.companyName} seed={brand.id} height={72} className="w-20 sm:w-24 rounded-md ring-4 ring-paper-50 shrink-0" />
+            <div className="w-20 sm:w-24 h-20 sm:h-24 rounded-2xl bg-ink-900 text-paper-50 flex items-center justify-center font-display text-2xl font-bold ring-4 ring-paper-100 border border-ink-200 shrink-0 select-none shadow-sm">
+              {brand.companyName.split(' ').map((s) => s[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()}
+            </div>
           )}
           <div className="min-w-0 pb-1 flex-1">
-            <h1 className="font-display text-2xl sm:text-3xl text-ink-900 leading-none tracking-[-0.02em]">
+            <h1 className="font-display text-2xl sm:text-3xl text-ink-900 leading-tight tracking-[-0.02em]">
               {brand.companyName}
             </h1>
-            <div className="text-sm text-ink-500 mt-1.5">{brand.industry}</div>
+            <div className="text-sm text-ink-600 font-medium mt-1">{brand.industry}</div>
             {brand.website && (
               <a href={brand.website} target="_blank" rel="noreferrer noopener" className="mt-2 text-sm text-ember-600 hover:text-ember-700 inline-flex items-center gap-1 font-semibold">
                 <ExternalLink className="w-3.5 h-3.5" /> {brand.website}

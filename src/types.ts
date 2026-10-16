@@ -42,6 +42,7 @@ export type CreatorProfile = {
   engagementRate: number; // %
   verified: boolean;
   connectedAccount?: ConnectedAccount;
+  connectedAccounts?: ConnectedAccount[];
   portfolio: PortfolioLink[];
   ratingAvg?: number | null;
   ratingCount?: number;
@@ -51,6 +52,9 @@ export type ConnectedAccount = {
   id: string;
   platform: Platform;
   handle: string;
+  url?: string | null;
+  followers?: number | null;
+  engagementRate?: number | null;
   verified: boolean;
   lastSyncedAt: string; // ISO
   status: 'connected' | 'expired' | 'revoked';

@@ -33,6 +33,17 @@ export default function VerifyEmail() {
     return () => clearTimeout(t);
   }, [cooldown]);
 
+  const goToDashboard = () => {
+    const role = user?.role;
+    if (role === 'creator') {
+      navigate('/creator/dashboard');
+    } else if (role === 'brand') {
+      navigate('/brand/dashboard');
+    } else {
+      navigate('/');
+    }
+  };
+
   const setDigit = (i: number, v: string) => {
     if (!/^\d?$/.test(v)) return;
     const next = [...digits];
@@ -85,7 +96,7 @@ export default function VerifyEmail() {
     try {
       await resendVerificationEmail();
       setCooldown(60);
-      push('A new code was sent.', 'info');
+      push('A new code was sent to your email.', 'info');
     } catch (err) {
       if (isApiError(err) && (err.code === 'resend_cooldown' || err.status === 429)) {
         setCooldown(60);
@@ -109,10 +120,10 @@ export default function VerifyEmail() {
       footer={
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={goToDashboard}
           className="text-ember-600 hover:text-ember-700 font-semibold inline-flex items-center gap-1 cursor-pointer"
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back
+          <ArrowLeft className="w-3.5 h-3.5" /> Skip to dashboard
         </button>
       }
     >
@@ -139,6 +150,15 @@ export default function VerifyEmail() {
         <Button size="lg" className="w-full" disabled={submitting}>
           {submitting ? 'Verifying…' : 'Verify email'}
         </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          size="lg"
+          className="w-full mt-2"
+          onClick={goToDashboard}
+        >
+          Skip for now — Go to dashboard →
+        </Button>
         <div className="text-sm text-ink-600 mt-4 text-center">
           Didn't get a code?{' '}
           {cooldown > 0 ? (
@@ -155,7 +175,7 @@ export default function VerifyEmail() {
         </div>
         <div className="mt-6 p-3 bg-paper-100 rounded-md text-xs text-ink-500 leading-relaxed">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 inline-block mr-1" />
-          Logging in works without verification — only the notification emails need a verified address. You can verify later from your account.
+          Logging in works without verification — only notification emails need a verified address. You can verify later from your account settings.
         </div>
       </form>
     </AuthShell>

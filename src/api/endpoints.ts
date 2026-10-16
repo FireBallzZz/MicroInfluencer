@@ -200,10 +200,81 @@ const numFrom = (v: string | null | undefined): number => {
   return Number.isFinite(n) ? n : 0;
 };
 
+export const cleanYouTubeHandle = (input: string): string => {
+  const trimmed = (input || '').trim();
+  if (!trimmed) return 'YouTube channel';
+  if (trimmed.includes('@')) {
+    const part = trimmed.split('@').pop()?.split('/')[0].split('?')[0];
+    return part ? `@${part}` : trimmed;
+  }
+  if (trimmed.includes('channel/')) {
+    return trimmed.split('channel/').pop()?.split('/')[0].split('?')[0] || trimmed;
+  }
+  const clean = trimmed
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/^youtube\.com\//, '')
+    .replace(/^\/+/, '');
+  return clean.startsWith('@') ? clean : `@${clean}`;
+};
+
+export const cleanSocialHandle = (input: string, platform?: string): string => {
+  const trimmed = (input || '').trim();
+  if (!trimmed) return '';
+  if (trimmed.includes('@')) {
+    const part = trimmed.split('@').pop()?.split('/')[0].split('?')[0];
+    return part ? `@${part}` : trimmed;
+  }
+  const clean = trimmed
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/^(instagram|facebook|tiktok|youtube)\.com\//, '')
+    .replace(/^\/+/, '')
+    .split('/')[0]
+    .split('?')[0];
+  return clean.startsWith('@') ? clean : `@${clean}`;
+};
+
+export const normalizeSocialUrl = (platform: string, input: string): string => {
+  const trimmed = (input || '').trim();
+  if (!trimmed) return '';
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  const handle = trimmed.replace(/^@/, '');
+  const p = platform.toLowerCase();
+  if (p === 'instagram') return `https://instagram.com/${handle}`;
+  if (p === 'facebook') return `https://facebook.com/${handle}`;
+  if (p === 'tiktok') return `https://www.tiktok.com/@${handle}`;
+  if (p === 'youtube') return `https://www.youtube.com/@${handle}`;
+  return `https://${p}.com/${handle}`;
+};
+
 export const mapCreatorMe = (p: ApiCreatorMe): CreatorProfile => {
+  const primaryKey = (p.primary_platform ?? 'youtube').toLowerCase();
+  const primaryStat = p.stats.find((s) => s.platform === primaryKey) || p.stats[0];
   const yt = p.stats.find((s) => s.platform === 'youtube');
-  const followers = yt?.followers ?? 0;
-  const engagement = yt ? numFrom(yt.engagement_rate) : 0;
+  const followers = primaryStat?.followers ?? (yt?.followers ?? 0);
+  const engagement = primaryStat ? numFrom(primaryStat.engagement_rate) : (yt ? numFrom(yt.engagement_rate) : 0);
+
+  const connectedAccounts: ConnectedAccount[] = p.stats.map((s) => {
+    const plat = platformFromBackend(s.platform);
+    const isYt = plat === 'YouTube';
+    const handle = isYt
+      ? cleanYouTubeHandle(s.handle_url ?? '')
+      : cleanSocialHandle(s.handle_url ?? '', plat);
+
+    return {
+      id: `acc_${s.platform}`,
+      platform: plat,
+      handle,
+      url: s.handle_url,
+      followers: s.followers,
+      engagementRate: numFrom(s.engagement_rate),
+      verified: s.is_verified,
+      lastSyncedAt: s.last_synced_at ?? new Date().toISOString(),
+      status: s.is_outdated ? 'expired' : 'connected',
+    };
+  });
+
   return {
     id: String(p.id),
     fullName: p.full_name,
@@ -220,19 +291,20 @@ export const mapCreatorMe = (p: ApiCreatorMe): CreatorProfile => {
     engagementRate: engagement,
     verified: !!yt?.is_verified,
     portfolio: [],
-    // Best-effort: the verified flag is the YouTube verified status. The
-    // dashboard reads it via the separate /social/youtube/ endpoint for the
-    // more accurate "needs reconnect" / "expired" flags.
     connectedAccount: yt
       ? {
           id: 'yt',
           platform: 'YouTube',
-          handle: (yt.handle_url ?? '').replace(/^https?:\/\//, '').replace(/^@/, ''),
+          handle: cleanYouTubeHandle(yt.handle_url ?? 'YouTube channel'),
+          url: yt.handle_url,
+          followers: yt.followers,
+          engagementRate: numFrom(yt.engagement_rate),
           verified: yt.is_verified,
           lastSyncedAt: yt.last_synced_at ?? new Date().toISOString(),
           status: 'connected',
         }
       : undefined,
+    connectedAccounts,
     ratingAvg: p.rating_avg !== null ? numFrom(p.rating_avg) : null,
     ratingCount: p.rating_count ?? 0,
   };
@@ -243,8 +315,22 @@ export const fetchCreatorMe = async (): Promise<CreatorProfile> => {
   return mapCreatorMe(data);
 };
 
+export const uploadCreatorPhoto = async (file: File): Promise<CreatorProfile> => {
+  const formData = new FormData();
+  formData.append('photo', file);
+  const data = await request<ApiCreatorMe>('creators/me/photo/', { method: 'POST', formData });
+  return mapCreatorMe(data);
+};
+
+export const deleteCreatorPhoto = async (): Promise<CreatorProfile> => {
+  const data = await request<ApiCreatorMe>('creators/me/photo/', { method: 'DELETE' });
+  return mapCreatorMe(data);
+};
+
 export const updateCreatorMe = async (patch: Partial<{
   fullName: string;
+  avatarUrl: string | null;
+  photo_url: string | null;
   bio: string;
   niche: Niche;
   primaryPlatform: Platform;
@@ -256,6 +342,8 @@ export const updateCreatorMe = async (patch: Partial<{
 }>): Promise<CreatorProfile> => {
   const body: Record<string, unknown> = {};
   if (patch.fullName !== undefined) body.full_name = patch.fullName;
+  if (patch.avatarUrl !== undefined) body.photo_url = patch.avatarUrl;
+  if (patch.photo_url !== undefined) body.photo_url = patch.photo_url;
   if (patch.bio !== undefined) body.bio = patch.bio;
   if (patch.niche !== undefined) body.niche = nicheToBackend(patch.niche);
   if (patch.primaryPlatform !== undefined) body.primary_platform = platformToBackend(patch.primaryPlatform);
@@ -319,17 +407,33 @@ export const fetchBrandMe = async (): Promise<BrandProfile> => {
   return mapBrandMe(data);
 };
 
+export const uploadBrandLogo = async (file: File): Promise<BrandProfile> => {
+  const formData = new FormData();
+  formData.append('logo', file);
+  const data = await request<ApiBrandMe>('brands/me/logo/', { method: 'POST', formData });
+  return mapBrandMe(data);
+};
+
+export const deleteBrandLogo = async (): Promise<BrandProfile> => {
+  const data = await request<ApiBrandMe>('brands/me/logo/', { method: 'DELETE' });
+  return mapBrandMe(data);
+};
+
 export const updateBrandMe = async (patch: Partial<{
   companyName: string;
   industry: string;
   website: string;
   about: string;
+  logoUrl: string | null;
+  logo_url: string | null;
 }>): Promise<BrandProfile> => {
   const body: Record<string, unknown> = {};
   if (patch.companyName !== undefined) body.company_name = patch.companyName;
   if (patch.industry !== undefined) body.industry = patch.industry;
   if (patch.website !== undefined) body.website = patch.website;
   if (patch.about !== undefined) body.about = patch.about;
+  if (patch.logoUrl !== undefined) body.logo_url = patch.logoUrl;
+  if (patch.logo_url !== undefined) body.logo_url = patch.logo_url;
   const data = await request<ApiBrandMe>('brands/me/', { method: 'PATCH', body });
   return mapBrandMe(data);
 };
@@ -908,6 +1012,60 @@ export const startYouTubeConnect = async (): Promise<string> => {
   return data.authorization_url;
 };
 
+export const completeYouTubeConnect = async (code: string, state: string): Promise<YouTubeStatus> => {
+  const data = await request<{
+    connected: boolean;
+    status: string | null;
+    needs_reconnect: boolean;
+    connected_at: string | null;
+    last_synced_at: string | null;
+  }>('social/youtube/complete/', {
+    method: 'POST',
+    body: { code, state },
+  });
+  return {
+    connected: data.connected,
+    status: (data.status as ConnectedAccount['status']) ?? null,
+    needsReconnect: data.needs_reconnect,
+    connectedAt: data.connected_at,
+    lastSyncedAt: data.last_synced_at,
+  };
+};
+
+export const directConnectYouTube = async (data: {
+  handle_url?: string;
+  followers?: number;
+  engagement_rate?: number;
+}): Promise<YouTubeStatus> => {
+  const res = await request<{
+    connected: boolean;
+    status: string | null;
+    needs_reconnect: boolean;
+    connected_at: string | null;
+    last_synced_at: string | null;
+  }>('social/youtube/direct-connect/', {
+    method: 'POST',
+    body: data,
+  });
+  return {
+    connected: res.connected,
+    status: (res.status as ConnectedAccount['status']) ?? null,
+    needsReconnect: res.needs_reconnect,
+    connectedAt: res.connected_at,
+    lastSyncedAt: res.last_synced_at,
+  };
+};
+
+export const savePlatformStats = async (
+  platform: 'youtube' | 'instagram' | 'tiktok' | 'facebook',
+  stats: { followers: number; engagement_rate?: number; handle_url?: string },
+) => {
+  return request(`creators/me/stats/${platform}/`, {
+    method: 'PUT',
+    body: stats,
+  });
+};
+
 export const refreshYouTube = async () => {
   await request('social/youtube/refresh/', { method: 'POST' });
 };
@@ -915,6 +1073,47 @@ export const refreshYouTube = async () => {
 export const disconnectYouTube = async () => {
   await request('social/youtube/', { method: 'DELETE' });
 };
+
+export const deletePlatformStats = async (platform: string) => {
+  await request(`creators/me/stats/${platform.toLowerCase()}/`, { method: 'DELETE' });
+};
+
+export const fetchSocialChallenge = async (platform: string): Promise<{
+  platform: string;
+  challenge_code: string;
+  instructions: string;
+}> => {
+  return request<{ platform: string; challenge_code: string; instructions: string }>(
+    `social/challenge/${platform.toLowerCase()}/`,
+  );
+};
+
+export const directConnectAccount = async (
+  platform: string,
+  payload: {
+    handle: string;
+    verification_method: 'oauth' | 'direct_auth' | 'challenge';
+    auth_code?: string;
+    followers?: number;
+    engagement_rate?: number;
+  },
+) => {
+  return request(`social/direct-connect/${platform.toLowerCase()}/`, {
+    method: 'POST',
+    body: payload,
+  });
+};
+
+export const startInstagramConnect = async (): Promise<string> => {
+  const data = await request<{ authorization_url: string }>('social/instagram/connect/');
+  return data.authorization_url;
+};
+
+export const startFacebookConnect = async (): Promise<string> => {
+  const data = await request<{ authorization_url: string }>('social/facebook/connect/');
+  return data.authorization_url;
+};
+
 
 // ----- Email verification + Notification Settings (FR-24) ------------------
 

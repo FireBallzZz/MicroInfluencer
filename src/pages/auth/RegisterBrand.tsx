@@ -1,17 +1,23 @@
 import { Link, useNavigate } from 'react-router-dom';
 import AuthShell from '../../components/AuthShell';
 import { FormField, Input, Button } from '../../components/ui';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../state/AuthContext';
 import { useToast } from '../../state/ToastContext';
 import { ApiError } from '../../api/client';
 
 export default function RegisterBrand() {
-  const { registerBrand, login, loading } = useAuth();
+  const { user, registerBrand, login, loading } = useAuth();
   const { push } = useToast();
   const navigate = useNavigate();
   const [form, setForm] = useState({ fullName: '', email: '', username: '', password: '', mobile: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (user) {
+      navigate(user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [k]: e.target.value });

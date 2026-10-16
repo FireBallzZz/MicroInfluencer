@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useStore, loadCreatorProfile, profileCompletion } from '../../state/Store';
 import { fmtNumber, fmtDate, currency } from '../../data/seed';
 import {
-  PlatformIcon, ChannelArt, VerifiedBadge, StatRow, SectionHeader, PageHeader,
+  PlatformIcon, VerifiedBadge, StatRow, SectionHeader, PageHeader,
 } from '../../components/ui';
 import { CheckCircle2, MapPin, ArrowUpRight, Pencil, Link as LinkIcon, Plus, Sparkles, Youtube } from 'lucide-react';
 
@@ -65,55 +65,47 @@ export default function CreatorProfile() {
         />
 
         {/* Hero / identity */}
-        <article className="card overflow-hidden">
-          {creator.coverUrl ? (
-            <img
-              src={creator.coverUrl}
-              alt="Cover"
-              className="w-full h-[160px] sm:h-[200px] object-cover"
-            />
-          ) : (
-            <ChannelArt name={creator.fullName} seed={creator.id} height={120} className="rounded-none w-full" />
-          )}
-          <div className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-10 sm:-mt-12">
-            <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4 min-w-0">
+        <article className="card p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 min-w-0">
               {creator.avatarUrl ? (
                 <img
                   src={creator.avatarUrl}
                   alt={creator.fullName}
-                  className="w-20 sm:w-24 h-20 sm:h-24 rounded-md object-cover ring-4 ring-paper-50 shrink-0"
+                  className="w-20 sm:w-24 h-20 sm:h-24 rounded-full object-cover ring-4 ring-paper-100 border border-ink-200 shrink-0 shadow-sm"
                 />
               ) : (
-                <ChannelArt
-                  name={creator.fullName}
-                  seed={creator.id}
-                  height={88}
-                  className="w-20 sm:w-24 rounded-md ring-4 ring-paper-50 shrink-0"
-                />
+                <div className="w-20 sm:w-24 h-20 sm:h-24 rounded-full bg-ink-900 text-paper-50 flex items-center justify-center font-display text-2xl font-bold ring-4 ring-paper-100 border border-ink-200 shrink-0 select-none shadow-sm">
+                  {creator.fullName.split(' ').map((s) => s[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()}
+                </div>
               )}
-              <div className="min-w-0 pb-1">
+              <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="font-display text-xl sm:text-2xl md:text-3xl text-ink-900 tracking-[-0.02em] leading-tight break-words">
+                  <h1 className="font-display text-2xl sm:text-3xl text-ink-900 tracking-[-0.02em] leading-tight break-words">
                     {creator.fullName}
                   </h1>
                   {isVerified && <CheckCircle2 className="w-5 h-5 text-ember-500 shrink-0" />}
                 </div>
-                <div className="text-sm text-ink-500 mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                  <span className="inline-flex items-center gap-1">
-                    <PlatformIcon platform={creator.primaryPlatform} className="w-3.5 h-3.5" />
+                <div className="text-sm text-ink-500 mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                  <span className="inline-flex items-center gap-1 font-medium text-ink-700">
+                    <PlatformIcon platform={creator.primaryPlatform} className="w-4 h-4" />
                     {creator.primaryPlatform}
                   </span>
                   <span className="text-ink-300">·</span>
-                  <span>{creator.niche}</span>
-                  <span className="text-ink-300">·</span>
-                  <span className="inline-flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5" />
-                    {creator.location}
-                  </span>
+                  <span className="font-medium text-ink-700">{creator.niche}</span>
+                  {creator.location && (
+                    <>
+                      <span className="text-ink-300">·</span>
+                      <span className="inline-flex items-center gap-1 text-ink-600">
+                        <MapPin className="w-3.5 h-3.5 text-ink-400" />
+                        {creator.location}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap sm:self-center">
               {isVerified
                 ? <VerifiedBadge verified />
                 : <span className="tag tag-amber">Verification pending</span>
@@ -193,7 +185,7 @@ export default function CreatorProfile() {
           <aside className="lg:col-span-4 space-y-5">
             <StatRow
               items={[
-                { label: 'Followers',  value: fmtNumber(creator.followers) },
+                { label: creator.primaryPlatform === 'YouTube' ? 'Subscribers' : 'Followers',  value: fmtNumber(creator.followers) },
                 { label: 'Engagement', value: `${creator.engagementRate}%` },
                 { label: 'Post rate',  value: currency(creator.ratePerPost) },
                 { label: 'Video rate', value: currency(creator.ratePerVideo) },
@@ -208,6 +200,43 @@ export default function CreatorProfile() {
                 <Row label="Location">{creator.location}</Row>
                 <Row label="Story rate">{currency(creator.ratePerStory)}</Row>
               </dl>
+            </div>
+
+            <div className="card p-5">
+              <div className="flex items-center justify-between">
+                <div className="eyebrow">Connected Channels</div>
+                <Link to="/creator/accounts" className="text-xs text-ember-600 hover:text-ember-700 font-medium">
+                  Manage
+                </Link>
+              </div>
+              {connectedAccounts.length === 0 ? (
+                <p className="mt-2.5 text-xs text-ink-500">
+                  No accounts linked yet. Connect your YouTube, Instagram, or Facebook channels.
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-2.5">
+                  {connectedAccounts.map((acc) => (
+                    <li key={acc.id} className="flex items-center justify-between text-sm py-1 border-b border-ink-100 last:border-none">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <PlatformIcon platform={acc.platform} className="w-4 h-4 shrink-0" />
+                        <span className="font-medium text-ink-900 truncate">
+                          {acc.url ? (
+                            <a href={acc.url} target="_blank" rel="noreferrer noopener" className="hover:underline hover:text-ember-600">
+                              {acc.handle}
+                            </a>
+                          ) : (
+                            acc.handle
+                          )}
+                        </span>
+                        {acc.verified && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
+                      </div>
+                      <span className="text-xs text-ink-500 font-medium shrink-0 ml-2">
+                        {fmtNumber(acc.followers ?? 0)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             <div className="card p-5">

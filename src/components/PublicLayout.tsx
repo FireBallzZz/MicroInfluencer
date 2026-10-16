@@ -1,7 +1,8 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { Menu, X, ArrowUpRight, Sparkles } from 'lucide-react';
+import { Menu, X, ArrowUpRight, Sparkles, LayoutDashboard, ArrowRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Logo } from './Logo';
+import { useAuth } from '../state/AuthContext';
 import clsx from 'clsx';
 
 const PUBLIC_NAV = [
@@ -13,8 +14,13 @@ const PUBLIC_NAV = [
 
 export default function PublicLayout() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  const dashboardLink = user
+    ? user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard'
+    : null;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -70,13 +76,13 @@ export default function PublicLayout() {
         <div className="container-page h-16 flex items-center justify-between gap-3 sm:gap-6">
           {/* Brand */}
           <div className="flex items-center gap-3 min-w-0">
-            <Logo onClick={closeMenu} size="md" />
+            <Logo to={dashboardLink || '/'} onClick={closeMenu} size="md" />
             <span
               aria-hidden
               className="hidden sm:inline-block font-mono text-[10px] uppercase tracking-[0.18em]
                          px-1.5 py-0.5 rounded-sm bg-paper-100 text-ink-500"
             >
-              demo
+              {user ? user.role : 'demo'}
             </span>
           </div>
 
@@ -98,20 +104,33 @@ export default function PublicLayout() {
 
           {/* Right actions */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <Link
-              to="/login"
-              className="btn btn-ghost btn-sm sm:btn-md hidden sm:inline-flex"
-            >
-              Log in
-            </Link>
-            <button
-              onClick={() => navigate('/register/role')}
-              className="btn btn-primary btn-sm sm:btn-md"
-            >
-              <Sparkles className="w-3.5 h-3.5 hidden sm:inline" />
-              Sign up
-              <ArrowUpRight className="w-3.5 h-3.5 hidden sm:inline" />
-            </button>
+            {user ? (
+              <Link
+                to={dashboardLink!}
+                className="btn btn-primary btn-sm sm:btn-md"
+              >
+                <LayoutDashboard className="w-4 h-4 hidden sm:inline" />
+                <span>Dashboard</span>
+                <ArrowRight className="w-3.5 h-3.5 hidden sm:inline" />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="btn btn-ghost btn-sm sm:btn-md hidden sm:inline-flex"
+                >
+                  Log in
+                </Link>
+                <button
+                  onClick={() => navigate('/register/role')}
+                  className="btn btn-primary btn-sm sm:btn-md"
+                >
+                  <Sparkles className="w-3.5 h-3.5 hidden sm:inline" />
+                  Sign up
+                  <ArrowUpRight className="w-3.5 h-3.5 hidden sm:inline" />
+                </button>
+              </>
+            )}
 
             {/* Hamburger (below lg) */}
             <button
@@ -153,19 +172,35 @@ export default function PublicLayout() {
                 {item.label}
               </a>
             ))}
-            <Link
-              to="/login"
-              onClick={closeMenu}
-              className="py-3 border-b border-ink-200/60 font-medium hover:text-ink-900 transition-colors"
-            >
-              Log in
-            </Link>
-            <button
-              onClick={() => { closeMenu(); navigate('/register/role'); }}
-              className="py-3 text-left font-medium text-ember-700 hover:text-ember-800 transition-colors"
-            >
-              Sign up →
-            </button>
+            {user ? (
+              <Link
+                to={dashboardLink!}
+                onClick={closeMenu}
+                className="py-3 border-b border-ink-200/60 font-semibold text-ember-700 hover:text-ember-800 transition-colors flex items-center justify-between"
+              >
+                <span className="flex items-center gap-2">
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>Go to Dashboard ({user.role})</span>
+                </span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  onClick={closeMenu}
+                  className="py-3 border-b border-ink-200/60 font-medium hover:text-ink-900 transition-colors"
+                >
+                  Log in
+                </Link>
+                <button
+                  onClick={() => { closeMenu(); navigate('/register/role'); }}
+                  className="py-3 text-left font-medium text-ember-700 hover:text-ember-800 transition-colors"
+                >
+                  Sign up →
+                </button>
+              </>
+            )}
             <p className="mt-3 eyebrow text-ink-400">
               Demo data · localStorage
             </p>

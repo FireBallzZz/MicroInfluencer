@@ -112,6 +112,9 @@ export default function AppShell() {
 
   if (!user) return null;
 
+  const { creator, brand } = useStore();
+  const avatarUrl = user.avatarUrl || (user.role === 'creator' ? creator?.avatarUrl : brand?.logoUrl);
+
   const nav = user.role === 'creator' ? creatorNav : brandNav;
   const quickActions = quickActionsByRole[user.role];
   const primaryAction = user.role === 'brand'
@@ -189,8 +192,8 @@ export default function AppShell() {
             </button>
 
             <Link
-              to="/"
-              aria-label="Home"
+              to={user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard'}
+              aria-label="Dashboard"
               className="hidden sm:inline-flex items-center justify-center gap-1.5 h-9 px-2.5 text-xs text-ink-500 hover:text-ink-900 hover:bg-paper-100 font-medium rounded-md transition-colors"
             >
               <Home className="w-3.5 h-3.5" />
@@ -202,6 +205,7 @@ export default function AppShell() {
               name={user.fullName}
               email={user.email}
               role={user.role}
+              avatarUrl={avatarUrl}
               onLogout={() => { logout(); navigate('/'); }}
             />
           </div>
@@ -596,11 +600,12 @@ function NotificationRow({ n, onClick }: { n: AppNotification; onClick: () => vo
 }
 
 function UserMenu({
-  name, email, role, onLogout,
+  name, email, role, avatarUrl, onLogout,
 }: {
   name: string;
   email: string;
   role: Role;
+  avatarUrl?: string;
   onLogout: () => void;
 }) {
   const { open, setOpen, mounted } = useAnimatedOpen(false);
@@ -622,7 +627,7 @@ function UserMenu({
         aria-expanded={open}
         aria-label="User menu"
       >
-        <Avatar name={name} size="sm" tone="ink" />
+        <Avatar name={name} src={avatarUrl} size="sm" tone="ink" />
         <ChevronDown
           className={clsx('w-3.5 h-3.5 text-ink-500 transition-transform duration-200 hidden sm:block', open && 'rotate-180')}
         />
@@ -637,7 +642,7 @@ function UserMenu({
         >
           <div className="px-4 py-3 border-b border-ink-200">
             <div className="flex items-center gap-2.5">
-              <Avatar name={name} size="sm" tone="ink" />
+              <Avatar name={name} src={avatarUrl} size="sm" tone="ink" />
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-ink-900 truncate">{name}</div>
                 <div className="text-xs text-ink-500 truncate">{email}</div>
@@ -665,11 +670,20 @@ function UserMenu({
             </li>
             <li>
               <Link
+                to={role === 'creator' ? '/creator/dashboard' : '/brand/dashboard'}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-paper-100 text-ink-700 transition-colors"
+              >
+                <Home className="w-4 h-4" /> Dashboard
+              </Link>
+            </li>
+            <li>
+              <Link
                 to="/"
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-paper-100 text-ink-700 transition-colors"
               >
-                <Home className="w-4 h-4" /> View home
+                <ArrowUpRight className="w-4 h-4" /> Public landing page
               </Link>
             </li>
           </ul>

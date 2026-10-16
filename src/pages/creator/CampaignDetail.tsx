@@ -3,7 +3,7 @@ import { useStore, addProposal, loadMyProposals } from '../../state/Store';
 import { useAsyncLoader } from '../../state/useEffectAsync';
 import { fetchCreatorCampaign } from '../../api/endpoints';
 import {
-  Button, CampaignStatusBadge, EligibilityChip, ChannelArt, PlatformIcon,
+  Button, CampaignStatusBadge, EligibilityChip, PlatformIcon,
   SectionHeader, StatRow, PageHeader,
 } from '../../components/ui';
 import { currency, fmtDate } from '../../data/seed';
@@ -84,25 +84,24 @@ export default function CampaignDetail() {
         <ArrowLeft className="w-4 h-4" /> Back to briefs
       </Link>
 
-      <header className="card overflow-hidden">
-        <ChannelArt name={campaign.brandName} seed={campaign.brandId} height={96} className="rounded-none" />
-        <div className="p-4 sm:p-6 -mt-10 sm:-mt-12">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-            <div className="flex flex-col sm:flex-row sm:items-end gap-3 min-w-0">
-              <ChannelArt name={campaign.brandName} seed={campaign.brandId} height={56} className="w-12 sm:w-14 rounded-md ring-4 ring-paper-50 shrink-0" />
-              <div className="min-w-0">
-                <div className="text-xs text-ink-500 truncate">{campaign.brandName} · {campaign.category}</div>
-                <h1 className="font-display text-xl sm:text-2xl md:text-3xl text-ink-900 leading-[1.15] tracking-[-0.02em] mt-1 break-words">
-                  {campaign.title}
-                </h1>
-              </div>
+      <header className="card p-5 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
+            <div className="w-12 sm:w-14 h-12 sm:h-14 rounded-xl bg-ink-900 text-paper-50 flex items-center justify-center font-display text-lg font-bold ring-2 ring-paper-100 shrink-0 select-none shadow-sm">
+              {campaign.brandName.slice(0, 2).toUpperCase()}
             </div>
-            <div className="self-start sm:self-auto shrink-0">
-              <CampaignStatusBadge status={campaign.status} />
+            <div className="min-w-0">
+              <div className="text-xs text-ink-500 truncate">{campaign.brandName} · {campaign.category}</div>
+              <h1 className="font-display text-xl sm:text-2xl md:text-3xl text-ink-900 leading-[1.15] tracking-[-0.02em] mt-1 break-words">
+                {campaign.title}
+              </h1>
             </div>
           </div>
-          <p className="text-[15px] text-ink-700 mt-5 leading-relaxed whitespace-pre-line break-words">{campaign.description}</p>
+          <div className="self-start sm:self-auto shrink-0">
+            <CampaignStatusBadge status={campaign.status} />
+          </div>
         </div>
+        <p className="text-[15px] text-ink-700 mt-5 leading-relaxed whitespace-pre-line break-words">{campaign.description}</p>
       </header>
 
       <StatRow

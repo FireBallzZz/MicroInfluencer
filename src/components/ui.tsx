@@ -266,15 +266,36 @@ export function PlatformIcon({ platform, className }: { platform: Platform; clas
   );
 }
 
-// ---------- Avatar (initials with editorial monogram feel) ----------
+// ---------- Avatar (initials or profile image) ----------
 export function Avatar({
-  name, size = 'md', className, tone = 'ink',
+  name, size = 'md', className, tone = 'ink', src,
 }: {
   name: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
   tone?: 'ink' | 'ember' | 'paper';
+  src?: string;
 }) {
+  const sizeCls =
+    size === 'xs' ? 'w-6 h-6 text-[10px]'
+    : size === 'sm' ? 'w-8 h-8 text-xs'
+    : size === 'lg' ? 'w-12 h-12 text-sm'
+    : size === 'xl' ? 'w-16 h-16 text-base'
+    : 'w-10 h-10 text-sm';
+
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        className={clsx(
+          'inline-flex object-cover rounded-full shrink-0 select-none border border-ink-200/60 shadow-sm',
+          sizeCls, className
+        )}
+      />
+    );
+  }
+
   const initials = name
     .split(' ')
     .map((s) => s[0])
@@ -282,12 +303,6 @@ export function Avatar({
     .slice(0, 2)
     .join('')
     .toUpperCase();
-  const sizeCls =
-    size === 'xs' ? 'w-6 h-6 text-[10px]'
-    : size === 'sm' ? 'w-8 h-8 text-xs'
-    : size === 'lg' ? 'w-12 h-12 text-sm'
-    : size === 'xl' ? 'w-16 h-16 text-base'
-    : 'w-10 h-10 text-sm';
   const toneCls =
     tone === 'ember' ? 'bg-ember-500 text-paper-50'
     : tone === 'paper' ? 'bg-paper-200 text-ink-700'
@@ -296,7 +311,7 @@ export function Avatar({
     <div
       aria-hidden
       className={clsx(
-        'inline-flex items-center justify-center font-semibold rounded-sm shrink-0 select-none',
+        'inline-flex items-center justify-center font-semibold rounded-full shrink-0 select-none shadow-sm',
         sizeCls, toneCls, className
       )}
     >

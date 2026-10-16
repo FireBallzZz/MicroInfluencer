@@ -1,20 +1,26 @@
 import { Link, useNavigate } from 'react-router-dom';
 import AuthShell from '../../components/AuthShell';
 import { FormField, Input, Button } from '../../components/ui';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../state/AuthContext';
 import { useToast } from '../../state/ToastContext';
 import { ApiError } from '../../api/client';
 import clsx from 'clsx';
 
 export default function Login() {
-  const { login, loading } = useAuth();
+  const { user, login, loading } = useAuth();
   const navigate = useNavigate();
   const { push } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [role, setRole] = useState<'creator' | 'brand'>('creator');
+
+  useEffect(() => {
+    if (user) {
+      navigate(user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

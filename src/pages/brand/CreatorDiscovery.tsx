@@ -238,7 +238,13 @@ export default function CreatorDiscovery() {
                 className="card card-hover p-4 sm:p-5 group block h-full"
               >
                 <div className="flex items-start gap-3">
-                  <ChannelArt name={c.fullName} seed={c.id} height={48} className="w-12 rounded-md shrink-0" />
+                  {c.avatarUrl ? (
+                    <img src={c.avatarUrl} alt={c.fullName} className="w-12 h-12 rounded-full object-cover shrink-0 border border-ink-200 shadow-xs" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-ink-900 text-paper-50 flex items-center justify-center font-display text-sm font-bold shrink-0 select-none shadow-xs">
+                      {c.fullName.split(' ').map((s) => s[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()}
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-ink-900 truncate flex items-center gap-1.5">
                       {c.fullName}

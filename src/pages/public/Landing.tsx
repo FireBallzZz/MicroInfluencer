@@ -78,7 +78,13 @@ export default function Landing() {
         setTab={setTab}
         query={query}
         setQuery={setQuery}
+        dashboardLink={dashboardLink}
         onSearch={() => {
+          if (dashboardLink) {
+            if (tab === 'talent') navigate(user?.role === 'brand' ? `/brand/creators?q=${encodeURIComponent(query)}` : `/creator/campaigns?q=${encodeURIComponent(query)}`);
+            else navigate(user?.role === 'creator' ? `/creator/campaigns?q=${encodeURIComponent(query)}` : `/brand/campaigns?q=${encodeURIComponent(query)}`);
+            return;
+          }
           if (tab === 'talent') navigate(`/login?next=/brand/creators&q=${encodeURIComponent(query)}`);
           else navigate(`/login?next=/creator/campaigns&q=${encodeURIComponent(query)}`);
         }}
@@ -108,13 +114,14 @@ export default function Landing() {
    ════════════════════════════════════════════════════════ */
 
 function Hero({
-  tab, setTab, query, setQuery, onSearch,
+  tab, setTab, query, setQuery, onSearch, dashboardLink,
 }: {
   tab: 'talent' | 'jobs';
   setTab: (t: 'talent' | 'jobs') => void;
   query: string;
   setQuery: (q: string) => void;
   onSearch: () => void;
+  dashboardLink?: string | null;
 }) {
   const navigate = useNavigate();
   return (
@@ -164,13 +171,23 @@ function Hero({
 
             <Reveal delay={200}>
               <div className="mt-7 sm:mt-9 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <button
-                  onClick={() => navigate('/register/role')}
-                  className="btn btn-primary btn-lg w-full sm:w-auto"
-                >
-                  Try the demo
-                  <Search className="w-4 h-4" />
-                </button>
+                {dashboardLink ? (
+                  <Link
+                    to={dashboardLink}
+                    className="btn btn-primary btn-lg w-full sm:w-auto"
+                  >
+                    Go to my dashboard
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                ) : (
+                  <button
+                    onClick={() => navigate('/register/role')}
+                    className="btn btn-primary btn-lg w-full sm:w-auto"
+                  >
+                    Try the demo
+                    <Search className="w-4 h-4" />
+                  </button>
+                )}
                 <a href="#how" className="btn btn-secondary btn-lg w-full sm:w-auto">
                   <Play className="w-3.5 h-3.5 fill-current" />
                   See how it works
@@ -1047,17 +1064,19 @@ function FinalCTA({ dashboardLink, onStart }: { dashboardLink: string | null; on
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               ) : (
-                <button onClick={onStart} className="btn btn-accent btn-lg w-full">
-                  Start the demo
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                <>
+                  <button onClick={onStart} className="btn btn-accent btn-lg w-full">
+                    Start the demo
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                  <Link
+                    to="/login"
+                    className="btn btn-lg w-full bg-transparent text-paper-50 border border-ink-600 hover:bg-ink-800"
+                  >
+                    I already have an account
+                  </Link>
+                </>
               )}
-              <Link
-                to="/login"
-                className="btn btn-lg w-full bg-transparent text-paper-50 border border-ink-600 hover:bg-ink-800"
-              >
-                I already have an account
-              </Link>
               <p className="text-[12px] text-ink-400 mt-1">
                 Demo only. No credit card. No email confirmation. Data lives in your browser.
               </p>

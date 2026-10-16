@@ -104,21 +104,36 @@ export const loadCreatorProfile = () =>
         api.fetchYouTubeStatus().catch(() => null),
       ]);
       const merged: CreatorProfile = { ...me, portfolio };
+      const allAccounts: ConnectedAccount[] = [...(me.connectedAccounts || [])];
+
       if (yt && yt.connected) {
-        const acc: ConnectedAccount = {
+        const existingYtIndex = allAccounts.findIndex((a) => a.platform === 'YouTube');
+        const ytAcc: ConnectedAccount = {
           id: 'yt',
           platform: 'YouTube',
-          handle: 'YouTube channel',
+          handle: me.connectedAccount?.handle || 'YouTube channel',
+          url: me.connectedAccount?.url,
+          followers: me.connectedAccount?.followers ?? me.followers,
+          engagementRate: me.connectedAccount?.engagementRate ?? me.engagementRate,
           verified: !yt.needsReconnect,
           lastSyncedAt: yt.lastSyncedAt ?? new Date().toISOString(),
           status: yt.needsReconnect ? 'expired' : 'connected',
         };
-        merged.connectedAccount = acc;
-        setState({ connectedAccounts: [acc] });
+        if (existingYtIndex >= 0) {
+          allAccounts[existingYtIndex] = ytAcc;
+        } else {
+          allAccounts.unshift(ytAcc);
+        }
+        merged.connectedAccount = ytAcc;
       } else {
-        setState({ connectedAccounts: [] });
+        const ytIdx = allAccounts.findIndex((a) => a.platform === 'YouTube');
+        if (ytIdx >= 0) {
+          allAccounts.splice(ytIdx, 1);
+        }
+        merged.connectedAccount = undefined;
       }
-      setState({ creator: merged });
+      merged.connectedAccounts = allAccounts;
+      setState({ connectedAccounts: allAccounts, creator: merged });
       return merged;
     } catch (err) {
       const msg = isApiError(err) ? err.message : 'Failed to load profile.';
@@ -151,6 +166,7 @@ export const loadBrandProfile = () =>
 export const updateCreator = async (
   patch: Partial<{
     fullName: string;
+    avatarUrl: string | null;
     bio: string;
     niche: Niche;
     primaryPlatform: Platform;
@@ -163,6 +179,7 @@ export const updateCreator = async (
   const cityCountry = patch.location?.split(',').map((s) => s.trim()) ?? [];
   const updated = await api.updateCreatorMe({
     fullName: patch.fullName,
+    avatarUrl: patch.avatarUrl,
     bio: patch.bio,
     niche: patch.niche,
     primaryPlatform: patch.primaryPlatform,
@@ -172,6 +189,20 @@ export const updateCreator = async (
     ratePerStory: patch.ratePerStory,
     ratePerVideo: patch.ratePerVideo,
   });
+  const merged: CreatorProfile = { ...updated, portfolio: state.creator?.portfolio ?? [] };
+  setState({ creator: merged });
+  return merged;
+};
+
+export const uploadCreatorPhoto = async (file: File): Promise<CreatorProfile | null> => {
+  const updated = await api.uploadCreatorPhoto(file);
+  const merged: CreatorProfile = { ...updated, portfolio: state.creator?.portfolio ?? [] };
+  setState({ creator: merged });
+  return merged;
+};
+
+export const removeCreatorPhoto = async (): Promise<CreatorProfile | null> => {
+  const updated = await api.deleteCreatorPhoto();
   const merged: CreatorProfile = { ...updated, portfolio: state.creator?.portfolio ?? [] };
   setState({ creator: merged });
   return merged;
@@ -197,9 +228,21 @@ export const setCreatorPortfolio = async (links: PortfolioLink[]): Promise<void>
 };
 
 export const updateBrand = async (
-  patch: Partial<{ companyName: string; industry: string; website: string; about: string }>,
+  patch: Partial<{ companyName: string; industry: string; website: string; about: string; logoUrl?: string | null }>,
 ): Promise<BrandProfile | null> => {
   const updated = await api.updateBrandMe(patch);
+  setState({ brand: updated });
+  return updated;
+};
+
+export const uploadBrandLogo = async (file: File): Promise<BrandProfile | null> => {
+  const updated = await api.uploadBrandLogo(file);
+  setState({ brand: updated });
+  return updated;
+};
+
+export const removeBrandLogo = async (): Promise<BrandProfile | null> => {
+  const updated = await api.deleteBrandLogo();
   setState({ brand: updated });
   return updated;
 };
@@ -427,12 +470,86 @@ export const connectYouTube = async (): Promise<void> => {
   window.location.assign(url);
 };
 
-export const disconnectYouTube = async (): Promise<void> => {
-  await api.disconnectYouTube();
-  setState({ connectedAccounts: [] });
-  if (state.creator) {
-    setState({ creator: { ...state.creator, connectedAccount: undefined, verified: false } });
+export const completeYouTubeConnect = async (code: string, stateParam: string): Promise<void> => {
+  const yt = await api.completeYouTubeConnect(code, stateParam);
+  if (yt.connected) {
+    const acc: ConnectedAccount = {
+      id: 'yt',
+      platform: 'YouTube',
+      handle: state.creator?.connectedAccount?.handle || 'YouTube channel',
+      verified: !yt.needsReconnect,
+      lastSyncedAt: yt.lastSyncedAt ?? new Date().toISOString(),
+      status: yt.needsReconnect ? 'expired' : 'connected',
+    };
+    setState({ connectedAccounts: [acc] });
+    if (state.creator) {
+      setState({ creator: { ...state.creator, connectedAccount: acc, verified: !yt.needsReconnect } });
+    }
   }
+};
+
+export const directConnectYouTube = async (data: {
+  handle_url?: string;
+  followers?: number;
+  engagement_rate?: number;
+}): Promise<void> => {
+  await api.directConnectYouTube(data);
+  await loadCreatorProfile();
+};
+
+export const directConnectAccount = async (
+  platform: string,
+  payload: {
+    handle: string;
+    verification_method: 'oauth' | 'direct_auth' | 'challenge';
+    auth_code?: string;
+    followers?: number;
+    engagement_rate?: number;
+  },
+): Promise<void> => {
+  await api.directConnectAccount(platform, payload);
+  await loadCreatorProfile();
+};
+
+export const saveManualPlatformStats = async (
+  platform: 'youtube' | 'instagram' | 'tiktok' | 'facebook',
+  stats: { followers: number; engagement_rate?: number; handle_url?: string },
+): Promise<void> => {
+  await api.savePlatformStats(platform, stats);
+  await loadCreatorProfile();
+};
+
+export const disconnectPlatform = async (platform: string): Promise<void> => {
+  const p = platform.toLowerCase();
+  if (p === 'youtube') {
+    await api.disconnectYouTube().catch(() => undefined);
+    await api.deletePlatformStats('youtube').catch(() => undefined);
+  } else {
+    await api.deletePlatformStats(p);
+  }
+
+  const filtered = state.connectedAccounts.filter(
+    (a) => a.platform.toLowerCase() !== p
+  );
+  setState({
+    connectedAccounts: filtered,
+    creator: state.creator
+      ? {
+          ...state.creator,
+          connectedAccount: p === 'youtube' ? undefined : state.creator.connectedAccount,
+          connectedAccounts: (state.creator.connectedAccounts || []).filter(
+            (a) => a.platform.toLowerCase() !== p
+          ),
+          verified: p === 'youtube' ? false : state.creator.verified,
+        }
+      : null,
+  });
+
+  await loadCreatorProfile().catch(() => undefined);
+};
+
+export const disconnectYouTube = async (): Promise<void> => {
+  await disconnectPlatform('youtube');
 };
 
 export const updateConnectedAccount = async (
@@ -441,25 +558,7 @@ export const updateConnectedAccount = async (
 ): Promise<void> => {
   // "Refresh" maps to the backend's POST /social/youtube/refresh/.
   await api.refreshYouTube().catch(() => undefined);
-  // Pull the latest status afterwards.
-  try {
-    const yt = await api.fetchYouTubeStatus();
-    if (yt.connected) {
-      const acc: ConnectedAccount = {
-        id: 'yt',
-        platform: 'YouTube',
-        handle: 'YouTube channel',
-        verified: !yt.needsReconnect,
-        lastSyncedAt: yt.lastSyncedAt ?? new Date().toISOString(),
-        status: yt.needsReconnect ? 'expired' : 'connected',
-      };
-      setState({ connectedAccounts: [acc] });
-    } else {
-      setState({ connectedAccounts: [] });
-    }
-  } catch {
-    /* ignore */
-  }
+  await loadCreatorProfile();
 };
 
 // --- Helpers ---------------------------------------------------------------

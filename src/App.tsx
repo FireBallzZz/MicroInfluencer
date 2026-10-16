@@ -111,6 +111,7 @@ export default function App() {
         <Route path="/creator/profile" element={<CreatorProfile />} />
         <Route path="/creator/profile/edit" element={<EditCreatorProfile />} />
         <Route path="/creator/accounts" element={<ConnectedAccounts />} />
+        <Route path="/settings/connections" element={<ConnectedAccounts />} />
         <Route path="/creator/campaigns" element={<CampaignDiscovery />} />
         <Route path="/creator/campaigns/:id" element={<CampaignDetail />} />
         <Route path="/creator/applications" element={<MyApplications />} />

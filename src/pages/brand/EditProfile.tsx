@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   FormField, Input, Textarea, Select, Button, PageHeader, SectionHeader,
 } from '../../components/ui';
-import { useStore, updateBrand, loadBrandProfile } from '../../state/Store';
+import {
+  useStore, updateBrand, loadBrandProfile,
+  uploadBrandLogo, removeBrandLogo,
+} from '../../state/Store';
 import { useToast } from '../../state/ToastContext';
 import {
   Save, X, RotateCcw, ArrowLeft, AlertTriangle, CheckCircle2, Image as ImageIcon,
+  Camera, Upload, Trash2, Building2,
 } from 'lucide-react';
-import { ImagePicker } from '../../components/ImagePicker';
-import { ChannelArt } from '../../components/ui';
 import type { BrandProfile } from '../../types';
 import clsx from 'clsx';
 import { isApiError } from '../../api/client';
@@ -28,6 +30,8 @@ export default function EditBrandProfile() {
   const [form, setForm] = useState<BrandProfile | null>(brand);
   const [initial, setInitial] = useState<BrandProfile | null>(brand);
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!brand || !brand.id) {
@@ -46,6 +50,41 @@ export default function EditBrandProfile() {
     );
   }
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    try {
+      const updated = await uploadBrandLogo(file);
+      if (updated) {
+        setForm((prev) => (prev ? { ...prev, logoUrl: updated.logoUrl } : prev));
+        push('Brand logo updated successfully', 'success');
+      }
+    } catch (err) {
+      const msg = isApiError(err) ? err.message : 'Could not upload brand logo.';
+      push(msg, 'error');
+    } finally {
+      setUploadingLogo(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleLogoDelete = async () => {
+    setUploadingLogo(true);
+    try {
+      const updated = await removeBrandLogo();
+      if (updated) {
+        setForm((prev) => (prev ? { ...prev, logoUrl: undefined } : prev));
+        push('Brand logo removed', 'info');
+      }
+    } catch (err) {
+      const msg = isApiError(err) ? err.message : 'Could not remove brand logo.';
+      push(msg, 'error');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
   const set = <K extends keyof BrandProfile>(k: K, v: BrandProfile[K]) =>
     setForm((prev) => (prev ? { ...prev, [k]: v } : prev));
 
@@ -59,6 +98,7 @@ export default function EditBrandProfile() {
         industry: form.industry,
         website: form.website,
         about: form.about,
+        logoUrl: form.logoUrl ?? null,
       });
       setInitial(form);
       push('Company profile saved', 'success');
@@ -89,6 +129,72 @@ export default function EditBrandProfile() {
             </Link>
           }
         />
+
+        {/* Company logo */}
+        <section className="card p-5 sm:p-6">
+          <SectionHeader
+            eyebrow="Company logo"
+            title="Brand logo"
+            description="Upload your official logo so creators recognize your brand across discovery and campaigns."
+          />
+          <div className="mt-5 flex flex-col sm:flex-row items-center gap-6">
+            <div className="relative group shrink-0">
+              {form.logoUrl ? (
+                <img
+                  src={form.logoUrl}
+                  alt={form.companyName}
+                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-contain bg-paper-100 p-2 ring-4 ring-paper-100 border border-ink-200 shadow-sm"
+                />
+              ) : (
+                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-ink-900 text-paper-50 flex items-center justify-center font-display text-3xl font-bold ring-4 ring-paper-100 border border-ink-200 shadow-sm select-none">
+                  {form.companyName.split(' ').map((s) => s[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()}
+                </div>
+              )}
+              {uploadingLogo && (
+                <div className="absolute inset-0 bg-ink-900/60 rounded-2xl flex items-center justify-center text-paper-50 text-xs font-semibold backdrop-blur-xs">
+                  Uploading…
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 space-y-2 text-center sm:text-left">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                />
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingLogo}
+                >
+                  <Camera className="w-4 h-4" />
+                  {form.logoUrl ? 'Change logo' : 'Upload logo'}
+                </Button>
+                {form.logoUrl && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-danger hover:bg-rose-50 hover:text-danger"
+                    onClick={handleLogoDelete}
+                    disabled={uploadingLogo}
+                  >
+                    <Trash2 className="w-4 h-4" /> Remove
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-ink-500">
+                Recommended: Square PNG, SVG, JPG, or WebP. Transparent background works best. Max 5 MB.
+              </p>
+            </div>
+          </div>
+        </section>
 
         <section className="card p-5 sm:p-6">
           <SectionHeader eyebrow="Identity" title="Company info" />

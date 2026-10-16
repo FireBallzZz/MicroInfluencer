@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import type { Campaign } from '../types';
-import { EligibilityChip, CampaignStatusBadge, ChannelArt, PlatformIcon, SaveButton } from './ui';
+import { EligibilityChip, CampaignStatusBadge, PlatformIcon, SaveButton } from './ui';
 import { fmtDate, currency } from '../data/seed';
-import { Megaphone } from 'lucide-react';
+import { Eye, ArrowRight, Flame } from 'lucide-react';
 
 export function CampaignCard({
   campaign,
@@ -10,66 +10,143 @@ export function CampaignCard({
   eligibility,
   reason,
   showStatus,
+  onQuickView,
+  isSaved,
+  onToggleSave,
 }: {
   campaign: Campaign;
   to: string;
   eligibility?: { eligible: boolean; reason?: string };
   reason?: string;
   showStatus?: boolean;
+  onQuickView?: (c: Campaign) => void;
+  isSaved?: boolean;
+  onToggleSave?: (id: string) => void;
 }) {
+  const diffDays = Math.ceil(
+    (new Date(campaign.applicationDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+  );
+  const isExpiringSoon = diffDays > 0 && diffDays <= 5;
+
   return (
-    <Link
-      to={to}
-      className="card card-hover p-4 sm:p-5 group block"
-    >
-      <div className="flex items-start gap-3">
-        <ChannelArt name={campaign.brandName} seed={campaign.brandId} height={48} className="w-12 rounded-md shrink-0" />
-        <div className="flex-1 min-w-0">
-          <div className="text-xs text-ink-500 truncate flex items-center gap-1.5">
-            <span className="truncate">{campaign.brandName}</span>
-            <span className="text-ink-300">·</span>
-            <span className="truncate">{campaign.category}</span>
-            <span className="text-ink-300">·</span>
-            <span className="inline-flex items-center gap-1 shrink-0">
-              <PlatformIcon platform={campaign.requiredPlatform} className="w-3 h-3" />
-              {campaign.requiredPlatform}
-            </span>
+    <div className="card card-hover p-4 sm:p-5 group flex flex-col justify-between relative transition-all duration-200 hover:shadow-card-hover hover:border-ink-300">
+      <div>
+        {/* Top bar: Brand & Save button */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-xl bg-ink-900 text-paper-50 flex items-center justify-center font-display text-sm font-bold shrink-0 shadow-xs ring-1 ring-ink-200">
+              {campaign.brandName.slice(0, 2).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs text-ink-500 truncate flex items-center gap-1.5 font-medium">
+                <span className="truncate">{campaign.brandName}</span>
+                <span className="text-ink-300">·</span>
+                <span className="truncate">{campaign.category}</span>
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-ink-700 bg-paper-100 px-2 py-0.5 rounded-full border border-ink-200">
+                  <PlatformIcon platform={campaign.requiredPlatform} className="w-3 h-3" />
+                  {campaign.requiredPlatform}
+                </span>
+                {isExpiringSoon && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                    <Flame className="w-3 h-3 text-rose-500 fill-rose-500" />
+                    {diffDays === 1 ? '1 day left' : `${diffDays}d left`}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-          <h3 className="mt-1 text-base font-semibold text-ink-900 leading-snug line-clamp-2 group-hover:text-ink-900 transition-colors">
-            {campaign.title}
-          </h3>
-          {campaign.description && (
-            <p className="mt-1.5 text-sm text-ink-500 line-clamp-2 leading-relaxed">{campaign.description}</p>
+
+          {onToggleSave && (
+            <SaveButton
+              saved={!!isSaved}
+              onToggle={() => onToggleSave(campaign.id)}
+              label={isSaved ? 'Remove from saved' : 'Save brief'}
+            />
           )}
+        </div>
+
+        {/* Title & Description */}
+        <div className="mt-3.5">
+          <Link
+            to={to}
+            className="text-base font-semibold text-ink-900 leading-snug line-clamp-2 hover:text-ember-600 transition-colors block"
+          >
+            {campaign.title}
+          </Link>
+          {campaign.description && (
+            <p className="mt-1.5 text-xs text-ink-500 line-clamp-2 leading-relaxed">
+              {campaign.description}
+            </p>
+          )}
+        </div>
+
+        {/* Deliverables pill if present */}
+        {campaign.deliverables && (
+          <div className="mt-3 px-2.5 py-1.5 bg-paper-100/70 rounded-md border border-ink-100 text-[11px] text-ink-600 truncate flex items-center gap-1.5">
+            <span className="font-semibold text-ink-700 shrink-0">Deliverables:</span>
+            <span className="truncate">{campaign.deliverables}</span>
+          </div>
+        )}
+
+        {/* Stat metrics */}
+        <div className="mt-3.5 grid grid-cols-3 gap-px border border-ink-200 bg-ink-200 rounded-lg overflow-hidden shadow-2xs">
+          <Cell label="Budget" value={currency(campaign.budgetPerCreator)} hint="/ creator" highlight />
+          <Cell label="Creators" value={String(campaign.creatorsNeeded)} hint="needed" />
+          <Cell
+            label="Deadline"
+            value={fmtDate(campaign.applicationDeadline)}
+            hint={diffDays > 0 ? `${diffDays}d left` : 'Ending'}
+          />
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-px border border-ink-200 bg-ink-200 rounded-md overflow-hidden">
-        <Cell label="Budget" value={currency(campaign.budgetPerCreator)} hint="/ creator" />
-        <Cell label="Creators" value={String(campaign.creatorsNeeded)} hint="needed" />
-        <Cell label="Deadline" value={fmtDate(campaign.applicationDeadline)} />
-      </div>
+      {/* Footer: Eligibility & Interactive Action Buttons */}
+      <div className="mt-4 pt-3.5 border-t border-ink-100 flex items-center justify-between gap-2">
+        <div>
+          {eligibility ? (
+            <EligibilityChip eligible={eligibility.eligible} reason={reason ?? eligibility.reason} />
+          ) : (
+            showStatus ? <CampaignStatusBadge status={campaign.status} /> : <span />
+          )}
+        </div>
 
-      <div className="mt-4 flex items-center justify-between">
-        {eligibility ? (
-          <EligibilityChip eligible={eligibility.eligible} reason={reason ?? eligibility.reason} />
-        ) : (
-          <span />
-        )}
-        {showStatus ? <CampaignStatusBadge status={campaign.status} /> : <Megaphone className="w-4 h-4 text-ink-300" />}
+        <div className="flex items-center gap-1.5">
+          {onQuickView && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onQuickView(campaign);
+              }}
+              className="btn btn-secondary btn-xs text-ink-700 hover:text-ink-900"
+              title="Quick preview brief details"
+            >
+              <Eye className="w-3.5 h-3.5" /> Quick View
+            </button>
+          )}
+          <Link
+            to={to}
+            className="btn btn-primary btn-xs"
+          >
+            Apply <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
       </div>
-    </Link>
+    </div>
   );
 }
 
-function Cell({ label, value, hint }: { label: string; value: string; hint?: string }) {
+function Cell({ label, value, hint, highlight }: { label: string; value: string; hint?: string; highlight?: boolean }) {
   return (
-    <div className="bg-paper-50 py-2 px-1.5 sm:px-3 text-center min-w-0 overflow-hidden">
+    <div className="bg-paper-50 py-2 px-1.5 sm:px-2.5 text-center min-w-0 overflow-hidden">
       <div className="eyebrow !text-[9px] truncate">{label}</div>
-      <div className="num-display text-xs sm:text-sm mt-0.5 truncate">
+      <div className={`num-display text-xs sm:text-sm mt-0.5 truncate ${highlight ? 'text-ink-900 font-bold' : ''}`}>
         {value}
-        {hint && <span className="text-[10px] text-ink-500 font-sans font-normal ml-0.5 sm:ml-1 hidden sm:inline">{hint}</span>}
       </div>
+      {hint && <div className="text-[10px] text-ink-400 truncate mt-0.5 font-sans">{hint}</div>}
     </div>
   );
 }

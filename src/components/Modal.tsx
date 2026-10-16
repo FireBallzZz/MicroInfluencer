@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -102,31 +102,49 @@ export function ConfirmDialog({
 }: {
   open: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => unknown;
   title: string;
   description?: string;
   confirmLabel?: string;
   destructive?: boolean;
 }) {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleConfirm = async () => {
+    try {
+      setSubmitting(true);
+      await Promise.resolve(onConfirm());
+      onClose();
+    } catch {
+      // In case onConfirm throws, leave open so parent can show error toast
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={submitting ? () => {} : onClose}
       title={title}
       size="sm"
       footer={
         <>
-          <button className="btn btn-secondary btn-md w-full sm:w-auto" onClick={onClose}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-md w-full sm:w-auto"
+            onClick={onClose}
+            disabled={submitting}
+          >
             Cancel
           </button>
           <button
+            type="button"
             className={clsx('btn btn-md w-full sm:w-auto', destructive ? 'btn-danger' : 'btn-primary')}
-            onClick={() => {
-              onConfirm();
-              onClose();
-            }}
+            onClick={handleConfirm}
+            disabled={submitting}
           >
-            {confirmLabel}
+            {submitting ? 'Please wait…' : confirmLabel}
           </button>
         </>
       }

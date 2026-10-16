@@ -1,8 +1,18 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AuthShell from '../../components/AuthShell';
 import { UserCircle2, Building2, ArrowRight, Check, Sparkles } from 'lucide-react';
+import { useAuth } from '../../state/AuthContext';
+import { useEffect } from 'react';
 
 export default function RoleSelection() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate(user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
   return (
     <AuthShell
       title="Join Microwork"

@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import {
   useStore, loadCreatorProfile, loadMyProposals, loadCreatorCampaigns,
 } from '../../state/Store';
-import { fetchCreatorDashboard, type CreatorDashboardData } from '../../api/endpoints';
+import { fetchCreatorDashboard, cleanYouTubeHandle, type CreatorDashboardData } from '../../api/endpoints';
 import { fmtNumber, fmtRelativeTime, currency } from '../../data/seed';
 import { useAuth } from '../../state/AuthContext';
 import {
@@ -149,7 +149,7 @@ export default function CreatorDashboard() {
               <div>
                 <div className="eyebrow">YouTube</div>
                 <div className="mt-1.5 font-display text-xl text-ink-900 tracking-[-0.01em]">
-                  {yt ? (yt.handle && yt.handle !== 'YouTube channel' ? `@${yt.handle}` : 'Connected') : 'Not connected'}
+                  {yt ? (yt.handle && yt.handle !== 'YouTube channel' ? cleanYouTubeHandle(yt.handle) : 'Connected') : 'Not connected'}
                 </div>
                 <div className="text-xs text-ink-500 mt-1">
                   {yt
@@ -164,7 +164,7 @@ export default function CreatorDashboard() {
                 <>
                   <span className="tag tag-ember"><CheckCircle2 className="w-3 h-3" /> Verified</span>
                   <span className="text-xs text-ink-500">
-                    {fmtNumber(creator?.followers ?? 0)} followers · {creator?.engagementRate ?? 0}% engagement
+                    {(creator?.followers ?? 0).toLocaleString()} {creator?.followers === 1 ? 'subscriber' : 'subscribers'} · {creator?.engagementRate ?? 0}% engagement
                   </span>
                 </>
               )}
