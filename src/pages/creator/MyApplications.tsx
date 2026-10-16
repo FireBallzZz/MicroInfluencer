@@ -1,20 +1,35 @@
 import { Link } from 'react-router-dom';
-import { useStore } from '../../state/Store';
+import { useEffect, useMemo, useState } from 'react';
 import {
   EmptyState, ProposalStatusBadge, PageHeader, ChannelArt, StatRow,
 } from '../../components/ui';
 import { fmtRelativeTime, currency } from '../../data/seed';
-import { useState, useMemo } from 'react';
 import clsx from 'clsx';
 import { Compass, ListChecks, ArrowUpRight, Filter } from 'lucide-react';
+import { useStore, loadMyProposals, loadCreatorCampaigns } from '../../state/Store';
+import type { MyProposal } from '../../types';
 
 const TABS = ['All', 'Pending', 'Shortlisted', 'Accepted', 'Rejected', 'Withdrawn'] as const;
 
 export default function MyApplications() {
-  const { proposals, campaigns, creator } = useStore();
+  const { proposals, campaigns, loading, errors } = useStore();
   const [tab, setTab] = useState<(typeof TABS)[number]>('All');
-  const myProposals = proposals.filter((p) => p.creatorId === creator.id);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        await Promise.all([loadMyProposals(), loadCreatorCampaigns()]);
+      } catch {
+        if (cancelled) return;
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const myProposals = proposals as MyProposal[];
   const counts = useMemo(() => ({
     All: myProposals.length,
     Pending: myProposals.filter((p) => p.status === 'pending').length,
@@ -24,15 +39,26 @@ export default function MyApplications() {
     Withdrawn: myProposals.filter((p) => p.status === 'withdrawn').length,
   }), [myProposals]);
 
-  const filtered = tab === 'All'
-    ? myProposals
-    : myProposals.filter((p) => p.status === tab.toLowerCase());
+  const filtered = useMemo(
+    () => (tab === 'All' ? myProposals : myProposals.filter((p) => p.status === tab.toLowerCase())),
+    [tab, myProposals],
+  );
 
-  const acceptedTotal = myProposals.filter((p) => p.status === 'accepted').length;
+  const acceptedTotal = counts.Accepted;
   const acceptanceRate = myProposals.length > 0
     ? Math.round((acceptedTotal / myProposals.length) * 100)
     : 0;
   const inFlight = counts.Pending + counts.Shortlisted;
+
+  const description = (() => {
+    if (inFlight > 0) {
+      return `${inFlight} in flight · ${acceptedTotal} accepted · ${myProposals.length} all time`;
+    }
+    if (myProposals.length > 0) {
+      return `${acceptedTotal} accepted out of ${myProposals.length} sent`;
+    }
+    return 'Track every application. Withdraw if you change your mind.';
+  })();
 
   return (
     <div className="container-page py-6 sm:py-8">
@@ -40,13 +66,7 @@ export default function MyApplications() {
         <PageHeader
           eyebrow="Applications"
           title="My proposals"
-          description={
-            inFlight > 0
-              ? `${inFlight} in flight · ${acceptedTotal} accepted · ${myProposals.length} all time`
-              : myProposals.length > 0
-              ? `${acceptedTotal} accepted out of ${myProposals.length} sent`
-              : 'Track every application. Withdraw if you change your mind.'
-          }
+          description={description}
           action={
             <Link to="/creator/campaigns" className="btn btn-primary btn-md self-start sm:self-auto">
               <Compass className="w-4 h-4" /> Find work
@@ -54,17 +74,15 @@ export default function MyApplications() {
           }
         />
 
-        {/* Quick stats */}
         <StatRow
           items={[
-            { label: 'Total sent',   value: myProposals.length, hint: 'all time' },
-            { label: 'In flight',    value: inFlight, hint: 'pending + shortlisted' },
-            { label: 'Acceptance',   value: `${acceptanceRate}%`, hint: 'of sent' },
-            { label: 'Accepted',     value: acceptedTotal, hint: 'hired' },
+            { label: 'Total sent', value: myProposals.length, hint: 'all time' },
+            { label: 'In flight', value: inFlight, hint: 'pending + shortlisted' },
+            { label: 'Acceptance', value: `${acceptanceRate}%`, hint: 'of sent' },
+            { label: 'Accepted', value: acceptedTotal, hint: 'hired' },
           ]}
         />
 
-        {/* Tab strip */}
         <div className="card overflow-hidden">
           <div className="flex border-b border-ink-200 overflow-x-auto no-scrollbar">
             {TABS.map((t) => (
@@ -73,9 +91,7 @@ export default function MyApplications() {
                 onClick={() => setTab(t)}
                 className={clsx(
                   'relative inline-flex items-center gap-2 px-4 sm:px-5 py-3.5 text-sm font-semibold whitespace-nowrap transition-colors shrink-0',
-                  tab === t
-                    ? 'text-ink-900'
-                    : 'text-ink-500 hover:text-ink-900',
+                  tab === t ? 'text-ink-900' : 'text-ink-500 hover:text-ink-900',
                 )}
                 aria-pressed={tab === t}
               >
@@ -98,7 +114,11 @@ export default function MyApplications() {
             ))}
           </div>
 
-          {filtered.length === 0 ? (
+          {loading.myProposals ? (
+            <div className="p-10 text-center text-sm text-ink-500">Loading proposals…</div>
+          ) : errors.myProposals ? (
+            <div className="p-10 text-center text-sm text-rose-700">{errors.myProposals}</div>
+          ) : filtered.length === 0 ? (
             <EmptyState
               icon={tab === 'All' ? <ListChecks className="w-5 h-5" /> : <Filter className="w-5 h-5" />}
               title={tab === 'All' ? 'No proposals yet' : `No ${tab.toLowerCase()} proposals`}
@@ -118,12 +138,11 @@ export default function MyApplications() {
                   </button>
                 )
               }
-              hint="Demo only — proposals live in localStorage."
             />
           ) : (
             <ul className="divide-y divide-ink-200/60 stagger">
               {filtered.map((p) => {
-                const c = campaigns.find((x) => x.id === p.campaignId);
+                const c = campaigns.find((x) => x.id === p.campaignId) ?? null;
                 return (
                   <li key={p.id}>
                     <Link
@@ -132,20 +151,21 @@ export default function MyApplications() {
                     >
                       <div className="flex items-center gap-3 sm:gap-4">
                         <ChannelArt
-                          name={c?.brandName ?? 'Brand'}
-                          seed={c?.brandId ?? 'unknown'}
+                          name={c?.brandName ?? p.brandName ?? 'Brand'}
+                          seed={c?.brandId ?? p.brandId ?? 'unknown'}
                           height={48}
                           className="w-12 rounded-md shrink-0"
                         />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <div className="font-semibold text-ink-900 truncate">
-                              {c?.title ?? 'Campaign'}
+                              {c?.title ?? p.campaignTitle ?? 'Campaign'}
                             </div>
                             <ProposalStatusBadge status={p.status} />
                           </div>
                           <div className="text-xs text-ink-500 mt-0.5 truncate">
-                            {c?.brandName} · {c?.category} · {c?.requiredPlatform} · submitted {fmtRelativeTime(p.submittedAt)}
+                            {(c?.brandName ?? p.brandName)} · {c?.category ?? '—'} · {c?.requiredPlatform ?? '—'} · submitted {fmtRelativeTime(p.submittedAt)}
+                            <span className="sm:hidden font-mono font-semibold text-ink-900 ml-1">· {currency(p.proposedRate)}</span>
                           </div>
                         </div>
                         <div className="hidden sm:flex flex-col items-end shrink-0">
@@ -163,13 +183,6 @@ export default function MyApplications() {
                 );
               })}
             </ul>
-          )}
-
-          {filtered.length > 0 && (
-            <div className="px-4 sm:px-5 py-3 border-t border-ink-200 flex items-center justify-between text-xs text-ink-500">
-              <span>Showing {filtered.length} of {myProposals.length}</span>
-              <span className="font-mono">demo · localStorage</span>
-            </div>
           )}
         </div>
       </div>

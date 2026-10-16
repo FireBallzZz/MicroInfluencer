@@ -63,7 +63,7 @@ export default function PublicLayout() {
         className={clsx(
           'sticky top-0 z-40 transition-all duration-300 ease-out-quint',
           scrolled
-            ? 'bg-paper-50/85 backdrop-blur-md border-b border-ink-200/80 shadow-[0_1px_0_rgba(11,10,8,0.02)]'
+            ? 'bg-paper-50/95 backdrop-blur-md border-b border-ink-200/80 shadow-[0_1px_0_rgba(11,10,8,0.02)]'
             : 'bg-paper-50/0 border-b border-transparent',
         )}
       >
@@ -179,7 +179,7 @@ export default function PublicLayout() {
 
       <footer className="bg-ink-900 text-ink-200 mt-16 sm:mt-24">
         <div className="container-page py-14 sm:py-20">
-          <div className="grid lg:grid-cols-12 gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
             <div className="lg:col-span-5">
               <Logo variant="invert" size="md" />
               <p className="mt-5 text-ink-300 max-w-sm leading-relaxed">
@@ -194,7 +194,7 @@ export default function PublicLayout() {
               </div>
             </div>
 
-            <div className="lg:col-span-7 grid sm:grid-cols-3 gap-8 text-sm">
+            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-8 text-sm">
               <div>
                 <h4 className="eyebrow text-ink-400">Product</h4>
                 <ul className="mt-4 space-y-2.5">
@@ -207,10 +207,8 @@ export default function PublicLayout() {
               <div>
                 <h4 className="eyebrow text-ink-400">Resources</h4>
                 <ul className="mt-4 space-y-2.5">
-                  <li className="hover:text-paper-50 transition-colors cursor-default">Trust &amp; safety</li>
-                  <li className="hover:text-paper-50 transition-colors cursor-default">Help center</li>
-                  <li className="hover:text-paper-50 transition-colors cursor-default">Terms</li>
-                  <li className="hover:text-paper-50 transition-colors cursor-default">Privacy</li>
+                  <li><Link to="/terms" className="hover:text-paper-50 transition-colors">Terms</Link></li>
+                  <li><Link to="/privacy" className="hover:text-paper-50 transition-colors">Privacy</Link></li>
                 </ul>
               </div>
               <div>

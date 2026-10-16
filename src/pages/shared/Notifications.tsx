@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
-import { Bell, CheckCheck, BellOff } from 'lucide-react';
-import { useStore, markAllNotificationsRead, markNotificationRead, pushNotification } from '../../state/Store';
+import { Bell, CheckCheck, BellOff, Inbox } from 'lucide-react';
+import {
+  useStore, markAllNotificationsRead, markNotificationRead, loadNotifications,
+} from '../../state/Store';
 import { fmtRelativeTime } from '../../data/seed';
 import { useAuth } from '../../state/AuthContext';
-import { Button, EmptyState, PageHeader, SectionHeader } from '../../components/ui';
+import { Button, EmptyState, PageHeader } from '../../components/ui';
 import clsx from 'clsx';
 import type { AppNotification, Role } from '../../types';
 
@@ -41,24 +43,30 @@ const ICONS: Record<string, string> = {
 
 export default function NotificationsPage({ role }: { role: Role }) {
   const { user } = useAuth();
-  const { notifications } = useStore();
+  const { notifications, loading, errors } = useStore();
+
+  // Boot: fetch notifications (the in-memory list starts empty after a refresh).
+  // useEffect(() => {
+  //   loadNotifications().catch(() => undefined);
+  // }, []);
+
   const sorted = [...notifications].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
   const groups = groupByDay(sorted);
   const unread = notifications.filter((n) => !n.read).length;
 
   const goTo = (n: AppNotification) => {
-    markNotificationRead(n.id);
+    markNotificationRead(n.id).catch(() => undefined);
     if (n.link) window.location.assign(n.link);
   };
 
   if (!user) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="container-page py-6 sm:py-8 space-y-6 max-w-4xl">
       <PageHeader
         eyebrow="Inbox"
         title="Notifications"
-        description={unread > 0 ? `${unread} unread · all activity from your demo data.` : 'You’re all caught up.'}
+        description={unread > 0 ? `${unread} unread` : 'You’re all caught up.'}
         action={
           <Button
             variant="secondary"
@@ -71,32 +79,18 @@ export default function NotificationsPage({ role }: { role: Role }) {
         }
       />
 
-      {/* Tiny dev tool to seed an extra notification (demo only) */}
-      {role === 'creator' && (
-        <div className="card p-4 sm:p-5 flex items-center justify-between gap-3">
-          <div>
-            <div className="eyebrow">Demo tool</div>
-            <div className="text-sm text-ink-700 mt-0.5">Add a sample notification to see the animation.</div>
-          </div>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => pushNotification({
-              type: 'proposal_shortlisted',
-              title: 'You were shortlisted',
-              description: 'Northwind Beverages shortlisted you for “Launch our new cold brew”.',
-              link: '/creator/applications',
-            })}
-          >
-            Send a sample
-          </Button>
-        </div>
+      {loading.notifications && (
+        <div className="card p-6 text-center text-sm text-ink-500">Loading notifications…</div>
       )}
 
-      {groups.every((g) => g.items.length === 0) ? (
+      {errors.notifications && (
+        <div className="card p-6 text-center text-sm text-rose-700">{errors.notifications}</div>
+      )}
+
+      {groups.every((g) => g.items.length === 0) && !loading.notifications ? (
         <div className="card">
           <EmptyState
-            icon={<BellOff className="w-5 h-5" />}
+            icon={<Inbox className="w-5 h-5" />}
             title="You’re all caught up"
             description="New activity will appear here."
           />

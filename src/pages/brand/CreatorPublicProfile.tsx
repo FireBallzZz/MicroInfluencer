@@ -1,21 +1,39 @@
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, MapPin, Megaphone } from 'lucide-react';
-import { discoverableCreators } from '../../data/seed';
+import { ArrowLeft, ExternalLink, MapPin, Megaphone, Star } from 'lucide-react';
+import { useAsyncLoader } from '../../state/useEffectAsync';
+import { fetchCreatorDetail, listCreatorReviews, type Review } from '../../api/endpoints';
 import {
-  Button, VerifiedBadge, ChannelArt, PlatformIcon, StatRow, SectionHeader, PageHeader,
+  Button, VerifiedBadge, ChannelArt, PlatformIcon, StatRow, SectionHeader, PageHeader, Rating,
 } from '../../components/ui';
-import { fmtNumber, currency, fmtDate } from '../../data/seed';
+import { fmtNumber, currency, fmtDate, fmtRelativeTime } from '../../data/seed';
+import { useEffect, useState } from 'react';
+import clsx from 'clsx';
 
 export default function CreatorPublicProfile() {
   const { id } = useParams();
-  const creator = discoverableCreators.find((c) => c.id === id);
+  const { data: creator, loading, error } = useAsyncLoader(
+    () => fetchCreatorDetail(id!),
+    [id],
+  );
+  const [reviews, setReviews] = useState<Review[]>([]);
 
-  if (!creator) {
+  useEffect(() => {
+    let cancelled = false;
+    if (!id) return;
+    listCreatorReviews(id).then((r) => { if (!cancelled) setReviews(r); }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [id]);
+
+  if (loading) {
+    return <div className="container-page py-8"><div className="card p-8 text-center text-sm text-ink-500">Loading…</div></div>;
+  }
+  if (error || !creator) {
     return (
       <div className="container-page py-6 sm:py-8">
         <div className="card p-10 text-center">
           <Megaphone className="w-7 h-7 text-ink-300 mx-auto mb-2" />
           <div className="text-sm font-semibold text-ink-900">Creator not found</div>
+          <div className="text-xs text-ink-500 mt-1">{error ?? 'It may have been removed.'}</div>
           <Link to="/brand/creators" className="text-sm link-accent inline-flex items-center gap-1 mt-3">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to search
           </Link>
@@ -53,6 +71,9 @@ export default function CreatorPublicProfile() {
               <span className="text-ink-300">·</span>
               <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {creator.location}</span>
             </div>
+            <div className="mt-3">
+              <Rating value={creator.ratingAvg ?? null} count={creator.ratingCount ?? 0} size="md" />
+            </div>
           </div>
           <div className="shrink-0">
             <Button variant="primary" size="md" className="w-full sm:w-auto">Invite to campaign</Button>
@@ -63,17 +84,19 @@ export default function CreatorPublicProfile() {
       <StatRow
         items={[
           { label: 'Followers', value: fmtNumber(creator.followers) },
-          { label: 'Engagement', value: creator.engagementRate + '%' },
-          { label: 'Post rate', value: currency(creator.ratePerPost) },
-          { label: 'Video rate', value: currency(creator.ratePerVideo) },
+          { label: 'Engagement', value: `${creator.engagementRate}%` },
+          { label: 'Post rate', value: creator.ratePerPost > 0 ? currency(creator.ratePerPost) : '—' },
+          { label: 'Video rate', value: creator.ratePerVideo > 0 ? currency(creator.ratePerVideo) : '—' },
         ]}
       />
 
-      <div className="grid lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8 space-y-6">
           <section className="card p-5 sm:p-6">
             <SectionHeader eyebrow="About" title="Bio" />
-            <p className="mt-4 text-ink-700 leading-relaxed text-[15px]">{creator.bio}</p>
+            <p className="mt-4 text-ink-700 leading-relaxed text-[15px]">
+              {creator.bio || <span className="italic text-ink-400">No bio yet.</span>}
+            </p>
           </section>
 
           <section className="card p-5 sm:p-6">
@@ -83,7 +106,7 @@ export default function CreatorPublicProfile() {
                 This creator hasn’t added portfolio links yet.
               </div>
             ) : (
-              <ul className="mt-5 grid sm:grid-cols-2 gap-3">
+              <ul className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {creator.portfolio.map((p) => (
                   <li key={p.id}>
                     <a
@@ -111,9 +134,9 @@ export default function CreatorPublicProfile() {
           <div className="card p-5">
             <div className="eyebrow">Rates</div>
             <dl className="mt-3 space-y-2.5 text-sm">
-              <Row label="Post">{currency(creator.ratePerPost)}</Row>
-              <Row label="Story">{currency(creator.ratePerStory)}</Row>
-              <Row label="Video">{currency(creator.ratePerVideo)}</Row>
+              <Row label="Post">{creator.ratePerPost > 0 ? currency(creator.ratePerPost) : '—'}</Row>
+              <Row label="Story">{creator.ratePerStory > 0 ? currency(creator.ratePerStory) : '—'}</Row>
+              <Row label="Video">{creator.ratePerVideo > 0 ? currency(creator.ratePerVideo) : '—'}</Row>
             </dl>
           </div>
           <div className="card p-5">
@@ -126,6 +149,38 @@ export default function CreatorPublicProfile() {
           </div>
         </aside>
       </div>
+
+      <section className="card p-5 sm:p-6">
+        <SectionHeader eyebrow="Reviews" title="Past collaborations" />
+        {reviews.length === 0 ? (
+          <div className="mt-5 border border-dashed border-ink-200 rounded-md p-6 text-center text-sm text-ink-500">
+            No reviews yet.
+          </div>
+        ) : (
+          <ul className="mt-5 space-y-4">
+            {reviews.map((r) => (
+              <li key={r.id} className="border border-ink-200 rounded-md p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-ink-900">{r.brand.name}</span>
+                    <span className="text-xs text-ink-500">· for “{r.campaign.title}”</span>
+                  </div>
+                  <div className="flex items-center">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <Star
+                        key={n}
+                        className={clsx('w-3.5 h-3.5', n <= r.rating ? 'fill-ember-500 text-ember-500' : 'text-ink-200')}
+                      />
+                    ))}
+                  </div>
+                </div>
+                {r.text && <p className="text-sm text-ink-700 mt-2 leading-relaxed">{r.text}</p>}
+                <div className="text-[11px] text-ink-400 mt-2">{fmtRelativeTime(r.createdAt)}</div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

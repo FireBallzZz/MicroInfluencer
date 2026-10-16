@@ -2,13 +2,13 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-do
 import {
   User, Search, Bell, Compass, ListChecks, Link2, LogOut, Plus,
   Megaphone, Building2, Menu, X, ChevronDown, CheckCircle2, ArrowRight,
-  Command, Sparkles, Home, ArrowUpRight,
+  Command, Sparkles, Home, ArrowUpRight, Mail,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { useAuth } from '../state/AuthContext';
 import {
-  useStore, markAllNotificationsRead, markNotificationRead,
+  useStore, markAllNotificationsRead, markNotificationRead, loadNotifications,
 } from '../state/Store';
 import { fmtRelativeTime } from '../data/seed';
 import type { AppNotification, Role } from '../types';
@@ -52,6 +52,7 @@ const brandActions: QuickAction[] = [
 const quickActionsByRole: Record<Role, QuickAction[]> = {
   creator: creatorActions,
   brand: brandActions,
+  admin: [],
 };
 
 export default function AppShell() {
@@ -93,6 +94,22 @@ export default function AppShell() {
     };
   }, [sidebarOpen, cmdkOpen]);
 
+  // Boot: pull the latest notifications so the bell badge is correct, then poll every 30s.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    const load = () => {
+      if (cancelled) return;
+      loadNotifications().catch(() => undefined);
+    };
+    load();
+    const id = window.setInterval(load, 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [user?.id]);
+
   if (!user) return null;
 
   const nav = user.role === 'creator' ? creatorNav : brandNav;
@@ -121,13 +138,10 @@ export default function AppShell() {
           </button>
 
           <div className="flex items-center gap-3 min-w-0 shrink-0">
-            <Link
+            <Wordmark
               to={user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard'}
-              aria-label="Microwork home"
-              className="inline-flex"
-            >
-              <Wordmark size="md" />
-            </Link>
+              size="md"
+            />
             <span
               aria-hidden
               className="hidden sm:inline-block font-mono text-[10px] uppercase tracking-[0.18em] px-1.5 py-0.5 rounded-sm bg-paper-100 text-ink-500"
@@ -192,35 +206,25 @@ export default function AppShell() {
             />
           </div>
         </div>
-
-        <div
-          className={clsx(
-            'lg:hidden overflow-hidden border-t border-ink-200 bg-paper-50 transition-all duration-300 ease-out-quint',
-            sidebarOpen ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0 pointer-events-none',
-          )}
-          aria-hidden={!sidebarOpen}
-        >
-          <ul className="container-page py-2 flex flex-col text-sm text-ink-700">
-            {nav.map((item) => (
-              <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  end={item.end}
-                  onClick={() => setSidebarOpen(false)}
-                  className={({ isActive }) =>
-                    clsx(
-                      'block py-3 border-b border-ink-200/60 last:border-b-0 font-medium',
-                      isActive ? 'text-ink-900' : 'hover:text-ink-900',
-                    )
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </div>
       </header>
+
+      {user && user.emailVerified === false && (
+        <div className="bg-amber-50 border-b border-amber-200">
+          <div className="container-page py-2.5 flex items-center justify-between gap-3 text-sm">
+            <span className="text-amber-900 inline-flex items-center gap-2">
+              <Mail className="w-4 h-4 text-amber-600" />
+              <span><strong>Verify your email</strong> to receive notification emails.</span>
+            </span>
+            <Link
+              to="/verify-email"
+              state={{ email: user.email }}
+              className="text-amber-900 hover:text-amber-700 font-semibold text-sm underline shrink-0"
+            >
+              Verify
+            </Link>
+          </div>
+        </div>
+      )}
 
       <main key={location.pathname} id="main" className="flex-1 min-w-0 anim-page-in pb-24 md:pb-0 bg-paper-50">
         <Outlet />
@@ -264,13 +268,13 @@ function MobileDrawer({
         onClick={onClose}
         aria-hidden
         className={clsx(
-          'fixed inset-0 z-40 bg-ink-900/40 transition-opacity duration-300 ease-out-quint md:hidden',
+          'fixed inset-0 z-40 bg-ink-900/40 transition-opacity duration-300 ease-out-quint lg:hidden',
           open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
         )}
       />
       <aside
         className={clsx(
-          'fixed md:hidden inset-y-0 left-0 z-50 w-72 bg-paper-50 border-r border-ink-200 transform transition-transform duration-300 ease-out-quint flex flex-col',
+          'fixed lg:hidden inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-paper-50 border-r border-ink-200 transform transition-transform duration-300 ease-out-quint flex flex-col',
           open ? 'translate-x-0' : '-translate-x-full',
         )}
         aria-label="Primary mobile"
@@ -314,11 +318,10 @@ function MobileDrawer({
           </nav>
         </div>
         <div className="border-t border-ink-200 p-3 shrink-0">
-          <button onClick={() => { onClose(); onLogout(); }} className="nav-item w-full">
-            <LogOut className="w-4 h-4 text-ink-500" />
-            <span>Switch demo role</span>
+          <button onClick={() => { onClose(); onLogout(); }} className="nav-item w-full text-danger hover:bg-rose-50">
+            <LogOut className="w-4 h-4 text-danger" />
+            <span>Log out</span>
           </button>
-          <p className="eyebrow text-ink-400 mt-2 px-3">Demo data · localStorage</p>
         </div>
       </aside>
     </>
@@ -382,7 +385,7 @@ function CommandPalette({
       ...nav.map((n) => ({ type: 'Page' as const, label: n.label, to: n.to, icon: n.icon })),
       ...quickActions.map((a) => ({ type: 'Action' as const, label: a.label, to: a.to, icon: a.icon })),
       { type: 'External' as const, label: 'Landing page', to: '/', icon: Home },
-      { type: 'External' as const, label: 'Switch demo role', to: '/', icon: LogOut },
+      { type: 'Action' as const, label: 'Log out', to: '/', icon: LogOut },
     ];
     if (!q) return all;
     const k = q.toLowerCase();
@@ -508,7 +511,7 @@ function NotificationBell() {
       {mounted && (
         <div
           className={clsx(
-            'absolute right-0 mt-2 w-[min(92vw,24rem)] sm:w-96 bg-paper-50 border border-ink-200 rounded-[14px] shadow-pop overflow-hidden z-50',
+            'absolute right-0 mt-2 w-[min(calc(100vw-1.5rem),24rem)] sm:w-96 bg-paper-50 border border-ink-200 rounded-[14px] shadow-pop overflow-hidden z-50',
             open ? 'anim-pop-in' : 'anim-pop-out pointer-events-none',
           )}
           style={{ transformOrigin: 'top right' }}
@@ -549,13 +552,20 @@ function NotificationBell() {
               </ul>
             )}
           </div>
-          <div className="border-t border-ink-200 px-4 py-2 text-center">
+          <div className="border-t border-ink-200 px-4 py-2 flex items-center justify-between gap-2">
             <Link
               to={user.role === 'creator' ? '/creator/notifications' : '/brand/notifications'}
               onClick={() => setOpen(false)}
               className="text-xs text-ink-700 hover:text-ink-900 font-semibold"
             >
-              View all notifications
+              View all
+            </Link>
+            <Link
+              to={user.role === 'creator' ? '/creator/settings/notifications' : '/brand/settings/notifications'}
+              onClick={() => setOpen(false)}
+              className="text-xs text-ink-700 hover:text-ink-900 font-semibold"
+            >
+              Settings
             </Link>
           </div>
         </div>
@@ -620,7 +630,7 @@ function UserMenu({
       {mounted && (
         <div
           className={clsx(
-            'absolute right-0 mt-2 w-64 bg-paper-50 border border-ink-200 rounded-[14px] shadow-pop overflow-hidden z-50',
+            'absolute right-0 top-full mt-2 w-[min(calc(100vw-1.5rem),16rem)] bg-paper-50 border border-ink-200 rounded-[14px] shadow-pop overflow-hidden z-50',
             open ? 'anim-pop-in' : 'anim-pop-out pointer-events-none',
           )}
           style={{ transformOrigin: 'top right' }}
@@ -666,9 +676,9 @@ function UserMenu({
           <div className="border-t border-ink-200 p-1.5">
             <button
               onClick={() => { setOpen(false); onLogout(); }}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-paper-100 text-ink-700 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-rose-50 text-danger hover:text-danger transition-colors font-medium"
             >
-              <LogOut className="w-4 h-4" /> Switch demo role
+              <LogOut className="w-4 h-4" /> Log out
             </button>
           </div>
         </div>

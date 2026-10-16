@@ -1,4 +1,4 @@
-export type Role = 'creator' | 'brand';
+export type Role = 'creator' | 'brand' | 'admin';
 
 export type User = {
   id: string;
@@ -8,6 +8,8 @@ export type User = {
   username: string;
   mobile?: string;
   avatarUrl?: string;
+  emailVerified?: boolean;
+  emailNotificationsEnabled?: boolean;
 };
 
 export type Niche =
@@ -41,6 +43,8 @@ export type CreatorProfile = {
   verified: boolean;
   connectedAccount?: ConnectedAccount;
   portfolio: PortfolioLink[];
+  ratingAvg?: number | null;
+  ratingCount?: number;
 };
 
 export type ConnectedAccount = {
@@ -113,6 +117,7 @@ export type Proposal = {
   status: ProposalStatus;
   submittedAt: string;
   withdrawReason?: string;
+  completedAt?: string;
 };
 
 export type NotificationType =
@@ -133,4 +138,16 @@ export type AppNotification = {
   createdAt: string;
   read: boolean;
   link?: string;
+};
+
+/**
+ * A proposal as it appears in the creator's "My applications" list.
+ * The backend joins the campaign + brand summary inline, so we carry those
+ * alongside the standard proposal fields.
+ */
+export type MyProposal = Proposal & {
+  campaignTitle: string;
+  brandName: string;
+  brandId: string;
+  campaignStatus: CampaignStatus;
 };

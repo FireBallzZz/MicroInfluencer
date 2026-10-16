@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { searchCreators } from '../../state/Store';
+import type { CreatorProfile } from '../../types';
 import {
-  EmptyState, Input, Select, Button, PageHeader, Avatar, ChannelArt, PlatformIcon,
+  EmptyState, Input, Select, Button, PageHeader, ChannelArt, PlatformIcon,
   VerifiedBadge, Label,
 } from '../../components/ui';
 import { NICHES, PLATFORMS, fmtNumber, currency } from '../../data/seed';
@@ -12,46 +12,79 @@ import { Search, X, SlidersHorizontal, MapPin, ArrowUpRight, Users } from 'lucid
 type Sort = 'relevance' | 'followers' | 'engagement' | 'rateLow' | 'rateHigh';
 
 export default function CreatorDiscovery() {
-  const [params, setParams] = useSearchParams();
-  const [keyword, setKeyword] = useState(params.get('q') ?? '');
+  const [keyword, setKeyword] = useState('');
   const [niche, setNiche] = useState('');
   const [platform, setPlatform] = useState('');
   const [location, setLocation] = useState('');
   const [minFollowers, setMinFollowers] = useState('');
   const [maxFollowers, setMaxFollowers] = useState('');
   const [minEngagement, setMinEngagement] = useState('');
+  const [minRate, setMinRate] = useState('');
+  const [maxRate, setMaxRate] = useState('');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [sort, setSort] = useState<Sort>('relevance');
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const results = useMemo(() => {
-    const base = searchCreators({
-      keyword: keyword || undefined,
+  const [results, setResults] = useState<CreatorProfile[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    const ordering =
+      sort === 'followers' ? 'followers' :
+      sort === 'engagement' ? 'engagement' :
+      sort === 'rateLow' ? 'rate' :
+      sort === 'rateHigh' ? '-rate' : '';
+    searchCreators({
+      q: keyword || undefined,
       niche: niche || undefined,
       platform: platform || undefined,
       location: location || undefined,
       minFollowers: minFollowers ? Number(minFollowers) : undefined,
       maxFollowers: maxFollowers ? Number(maxFollowers) : undefined,
       minEngagement: minEngagement ? Number(minEngagement) : undefined,
-    });
-    const filtered = verifiedOnly ? base.filter((c) => c.verified) : base;
-    const sorted = [...filtered];
-    if (sort === 'followers')   sorted.sort((a, b) => b.followers - a.followers);
-    if (sort === 'engagement')  sorted.sort((a, b) => b.engagementRate - a.engagementRate);
-    if (sort === 'rateLow')     sorted.sort((a, b) => a.ratePerPost - b.ratePerPost);
-    if (sort === 'rateHigh')    sorted.sort((a, b) => b.ratePerPost - a.ratePerPost);
-    return sorted;
-  }, [keyword, niche, platform, location, minFollowers, maxFollowers, minEngagement, verifiedOnly, sort]);
+      minRate: minRate ? Number(minRate) : undefined,
+      maxRate: maxRate ? Number(maxRate) : undefined,
+      verifiedOnly,
+      // Ordering is handled server-side when set.
+      ...(ordering ? { ordering } : {}),
+    })
+      .then((list) => {
+        if (cancelled) return;
+        setResults(list);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err?.message ?? 'Could not load creators.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [keyword, niche, platform, location, minFollowers, maxFollowers, minEngagement, minRate, maxRate, verifiedOnly, sort]);
+
+  const sorted = useMemo(() => {
+    // Server already returns ordered results when the user picked a sort;
+    // this is the client-side fallback for "relevance" (default order = -followers).
+    return [...results];
+  }, [results]);
 
   const reset = () => {
     setKeyword(''); setNiche(''); setPlatform(''); setLocation('');
     setMinFollowers(''); setMaxFollowers(''); setMinEngagement('');
+    setMinRate(''); setMaxRate('');
     setVerifiedOnly(false);
-    setParams({});
   };
 
   const hasFilters = !!(
-    keyword || niche || platform || location || minFollowers || maxFollowers || minEngagement || verifiedOnly
+    keyword || niche || platform || location ||
+    minFollowers || maxFollowers || minEngagement ||
+    minRate || maxRate || verifiedOnly
   );
 
   return (
@@ -59,26 +92,30 @@ export default function CreatorDiscovery() {
       <PageHeader
         eyebrow="Marketplace"
         title="Find creators"
-        description={`${results.length} of ${NICHES.length}× platform filters · demo data only.`}
+        description={
+          loading
+            ? 'Searching…'
+            : `${sorted.length} creator${sorted.length === 1 ? '' : 's'}${hasFilters ? ' match your filters' : ' in the marketplace'}.`
+        }
       />
 
       <div className="card">
-        <div className="p-4 sm:p-5 flex flex-col sm:flex-row gap-3">
+        <div className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center gap-3">
           <div className="relative flex-1 min-w-0">
-            <Search className="w-4 h-4 text-ink-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-ink-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
             <Input
-              className="pl-10 h-11"
+              className="pl-10 h-11 w-full"
               placeholder="Search by name, niche, location or bio"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
             />
           </div>
-          <div className="hidden sm:flex gap-2 flex-wrap">
-            <Select value={niche} onChange={(e) => setNiche(e.target.value)} className="min-w-[160px]">
+          <div className="hidden md:flex items-center gap-2 shrink-0">
+            <Select value={niche} onChange={(e) => setNiche(e.target.value)} className="w-40 h-11">
               <option value="">All niches</option>
               {NICHES.map((n) => <option key={n} value={n}>{n}</option>)}
             </Select>
-            <Select value={platform} onChange={(e) => setPlatform(e.target.value)} className="min-w-[160px]">
+            <Select value={platform} onChange={(e) => setPlatform(e.target.value)} className="w-40 h-11">
               <option value="">All platforms</option>
               {PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
             </Select>
@@ -86,6 +123,7 @@ export default function CreatorDiscovery() {
               variant={showAdvanced ? 'primary' : 'secondary'}
               onClick={() => setShowAdvanced((v) => !v)}
               aria-expanded={showAdvanced}
+              className="shrink-0 h-11"
             >
               <SlidersHorizontal className="w-4 h-4" /> More filters
             </Button>
@@ -93,25 +131,30 @@ export default function CreatorDiscovery() {
           <Button
             variant={showAdvanced ? 'primary' : 'secondary'}
             onClick={() => setShowAdvanced((v) => !v)}
-            className="sm:hidden w-full"
+            className="md:hidden w-full h-11"
           >
             <SlidersHorizontal className="w-4 h-4" /> Filters
           </Button>
         </div>
 
         {showAdvanced && (
-          <div className="border-t border-ink-200 p-4 sm:p-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-3 anim-fade-in bg-paper-50">
-            <Field label="Location">
-              <div className="relative">
-                <MapPin className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <Input
-                  className="pl-9"
-                  placeholder="City or country"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
-              </div>
-            </Field>
+          <div className="border-t border-ink-200 p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 anim-fade-in bg-paper-50">
+            <div className="md:hidden">
+              <Field label="Niche">
+                <Select value={niche} onChange={(e) => setNiche(e.target.value)}>
+                  <option value="">All niches</option>
+                  {NICHES.map((n) => <option key={n} value={n}>{n}</option>)}
+                </Select>
+              </Field>
+            </div>
+            <div className="md:hidden">
+              <Field label="Platform">
+                <Select value={platform} onChange={(e) => setPlatform(e.target.value)}>
+                  <option value="">All platforms</option>
+                  {PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
+                </Select>
+              </Field>
+            </div>
             <Field label="Min followers">
               <Input type="number" placeholder="10,000" value={minFollowers} onChange={(e) => setMinFollowers(e.target.value)} />
             </Field>
@@ -120,6 +163,21 @@ export default function CreatorDiscovery() {
             </Field>
             <Field label="Min engagement (%)">
               <Input type="number" step="0.1" placeholder="3" value={minEngagement} onChange={(e) => setMinEngagement(e.target.value)} />
+            </Field>
+            <Field label="Location">
+              <Input placeholder="City or country" value={location} onChange={(e) => setLocation(e.target.value)} />
+            </Field>
+            <Field label="Min rate (USD)">
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 text-sm">$</span>
+                <Input type="number" min={0} className="pl-6" placeholder="200" value={minRate} onChange={(e) => setMinRate(e.target.value)} />
+              </div>
+            </Field>
+            <Field label="Max rate (USD)">
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-500 text-sm">$</span>
+                <Input type="number" min={0} className="pl-6" placeholder="2000" value={maxRate} onChange={(e) => setMaxRate(e.target.value)} />
+              </div>
             </Field>
             <label className="flex items-center gap-2 sm:col-span-2 lg:col-span-4 text-sm text-ink-700">
               <input
@@ -135,7 +193,7 @@ export default function CreatorDiscovery() {
 
         <div className="px-4 sm:px-5 py-2.5 border-t border-ink-200 flex flex-wrap items-center justify-between gap-2 sm:gap-3 text-xs text-ink-500">
           <span>
-            <span className="font-mono text-ink-900">{results.length}</span> creators
+            <span className="font-mono text-ink-900">{sorted.length}</span> creators
             {hasFilters && <span className="text-ink-400"> · filtered</span>}
           </span>
           <div className="flex items-center gap-2 flex-wrap">
@@ -145,7 +203,7 @@ export default function CreatorDiscovery() {
               <option value="followers">Followers (high to low)</option>
               <option value="engagement">Engagement (high to low)</option>
               <option value="rateLow">Rate (low to high)</option>
-              <option value="rateHigh">Rate (high to low)</option>
+              <option value="rateHigh">Rate (high to high)</option>
             </Select>
             {hasFilters && (
               <Button variant="ghost" size="xs" onClick={reset}>
@@ -156,19 +214,24 @@ export default function CreatorDiscovery() {
         </div>
       </div>
 
-      {results.length === 0 ? (
+      {error ? (
+        <div className="card p-8 text-center text-sm text-rose-700">{error}</div>
+      ) : sorted.length === 0 ? (
         <div className="card">
           <EmptyState
             icon={<Users className="w-5 h-5" />}
-            title="No creators match your filters"
-            description="Try clearing filters or broadening your search."
-            action={<Button variant="secondary" onClick={reset}>Clear filters</Button>}
-            hint="Demo only — search runs against the local seed data."
+            title={loading ? 'Searching…' : 'No creators match your filters'}
+            description={loading ? 'Give it a moment.' : 'Try clearing filters or broadening your search.'}
+            action={
+              !loading ? (
+                <Button variant="secondary" onClick={reset}>Clear filters</Button>
+              ) : null
+            }
           />
         </div>
       ) : (
-        <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 stagger">
-          {results.map((c) => (
+        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 stagger">
+          {sorted.map((c) => (
             <li key={c.id}>
               <Link
                 to={`/brand/creators/${c.id}`}
@@ -183,20 +246,17 @@ export default function CreatorDiscovery() {
                     <div className="text-xs text-ink-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
                       <PlatformIcon platform={c.primaryPlatform} className="w-3 h-3" />
                       <span>{c.niche}</span>
-                      <span className="text-ink-300">·</span>
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        {c.location}
-                      </span>
                     </div>
                   </div>
                   <VerifiedBadge verified={c.verified} />
                 </div>
-                <p className="text-sm text-ink-500 mt-3 line-clamp-2 leading-relaxed">{c.bio}</p>
+                <p className="text-sm text-ink-500 mt-3 line-clamp-2 leading-relaxed min-h-[2.5em]">
+                  {c.bio || <span className="italic text-ink-400">No bio yet.</span>}
+                </p>
                 <dl className="mt-4 grid grid-cols-3 gap-px bg-ink-200 border border-ink-200 rounded-md overflow-hidden">
                   <Stat label="Followers" value={fmtNumber(c.followers)} />
                   <Stat label="Engagement" value={c.engagementRate + '%'} />
-                  <Stat label="Post rate" value={currency(c.ratePerPost)} />
+                  <Stat label="Post rate" value={c.ratePerPost > 0 ? currency(c.ratePerPost) : '—'} />
                 </dl>
                 <div className="mt-3 flex items-center justify-end text-[11px] font-mono uppercase tracking-[0.12em] text-ink-500 group-hover:text-ink-900 transition-colors">
                   View profile

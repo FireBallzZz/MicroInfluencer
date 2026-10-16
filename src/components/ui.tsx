@@ -224,6 +224,34 @@ export function VerifiedBadge({ verified }: { verified: boolean }) {
   );
 }
 
+// ---------- Rating ----------
+import { Star } from 'lucide-react';
+export function Rating({
+  value,
+  count,
+  size = 'sm',
+}: { value: number | null | undefined; count?: number; size?: 'sm' | 'md' }) {
+  const v = value ?? 0;
+  const sizes = size === 'md' ? 'w-4 h-4' : 'w-3.5 h-3.5';
+  if (v <= 0 || (count !== undefined && count === 0)) {
+    return <span className="text-xs text-ink-400">No reviews yet</span>;
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-sm text-ink-900" title={`${v.toFixed(1)} out of 5`}>
+      <span className="inline-flex">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <Star
+            key={n}
+            className={clsx(sizes, n <= Math.round(v) ? 'fill-ember-500 text-ember-500' : 'text-ink-200')}
+          />
+        ))}
+      </span>
+      <span className="font-mono font-semibold text-ink-900">{v.toFixed(1)}</span>
+      {count !== undefined && <span className="text-xs text-ink-500">({count})</span>}
+    </span>
+  );
+}
+
 // ---------- Platform icons ----------
 export function PlatformIcon({ platform, className }: { platform: Platform; className?: string }) {
   const cls = clsx('w-3.5 h-3.5', className);
@@ -427,10 +455,10 @@ export function StatRow({ items }: { items: { label: string; value: ReactNode; h
   return (
     <dl className="grid grid-cols-2 sm:grid-cols-4 gap-px border border-ink-200 bg-ink-200 rounded-md overflow-hidden">
       {items.map((it) => (
-        <div key={it.label} className="bg-paper-50 p-4">
-          <dt className="eyebrow">{it.label}</dt>
-          <dd className="num-display text-xl mt-1.5">{it.value}</dd>
-          {it.hint && <div className="text-[11px] text-ink-500 mt-0.5">{it.hint}</div>}
+        <div key={it.label} className="bg-paper-50 p-2.5 sm:p-4 min-w-0">
+          <dt className="eyebrow truncate">{it.label}</dt>
+          <dd className="num-display text-lg sm:text-xl mt-1 sm:mt-1.5 truncate">{it.value}</dd>
+          {it.hint && <div className="text-[10px] sm:text-[11px] text-ink-500 mt-0.5 truncate">{it.hint}</div>}
         </div>
       ))}
     </dl>

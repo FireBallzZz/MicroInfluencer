@@ -14,7 +14,7 @@ export default function AuthShell({
   variant = 'neutral',
 }: {
   title: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
   side?: ReactNode;

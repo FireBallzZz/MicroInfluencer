@@ -40,7 +40,7 @@ export function CampaignForm({
               invalid={!!errors?.description}
             />
           </FormField>
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Category / niche" error={errors?.category}>
               <Select
                 value={values.category}
@@ -65,7 +65,7 @@ export function CampaignForm({
 
       <section className="card p-5 sm:p-6">
         <SectionHeader eyebrow="02" title="Budget &amp; logistics" />
-        <div className="mt-5 grid sm:grid-cols-2 gap-4">
+        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField label="Budget per creator (USD)" error={errors?.budgetPerCreator}>
             <Input
               type="number"

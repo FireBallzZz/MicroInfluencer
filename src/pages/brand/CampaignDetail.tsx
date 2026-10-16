@@ -1,22 +1,57 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Pencil, Trash2, CheckCircle2, Megaphone, ArrowRight, Inbox, AlertTriangle, Users } from 'lucide-react';
-import { setCampaignStatus, deleteCampaign, useStore } from '../../state/Store';
-import { Button, CampaignStatusBadge, EmptyState, ChannelArt, StatRow, SectionHeader, PageHeader, ProposalStatusBadge, Avatar } from '../../components/ui';
+import { ArrowLeft, Pencil, Trash2, Megaphone, ArrowRight, Inbox, AlertTriangle, Users, BarChart3 } from 'lucide-react';
+import {
+  setCampaignStatus, deleteCampaign, useStore, loadBrandCampaigns, loadBrandProfile,
+} from '../../state/Store';
+import {
+  Button, CampaignStatusBadge, EmptyState, ChannelArt, StatRow, SectionHeader,
+  PageHeader, ProposalStatusBadge, Avatar,
+} from '../../components/ui';
 import { currency, fmtDate } from '../../data/seed';
 import { ConfirmDialog } from '../../components/Modal';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '../../state/ToastContext';
+import { listBrandCampaignProposals } from '../../api/endpoints';
+import { isApiError } from '../../api/client';
 
 export default function CampaignDetailBrand() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { push } = useToast();
-  const { campaigns, proposals } = useStore();
-  const c = campaigns.find((x) => x.id === id);
+  const { campaigns, brand } = useStore();
+  const [proposals, setProposals] = useState<Awaited<ReturnType<typeof listBrandCampaignProposals>>['results']>([]);
+  const [acceptedCount, setAcceptedCount] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
   const [confirmPublish, setConfirmPublish] = useState(false);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        await Promise.all([loadBrandProfile(), loadBrandCampaigns()]);
+        if (!id) return;
+        const res = await listBrandCampaignProposals(id);
+        if (!cancelled) {
+          setProposals(res.results);
+          setAcceptedCount(res.acceptedCount);
+        }
+      } catch (err) {
+        if (!cancelled) push(isApiError(err) ? err.message : 'Failed to load campaign.', 'error');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  const c = campaigns.find((x) => x.id === id);
+  if (loading && !c) {
+    return <div className="container-page py-8"><div className="card p-8 text-center text-sm text-ink-500">Loading…</div></div>;
+  }
   if (!c) {
     return (
       <div className="container-page py-6 sm:py-8">
@@ -31,9 +66,7 @@ export default function CampaignDetailBrand() {
     );
   }
 
-  const myProposals = proposals.filter((p) => p.campaignId === c.id);
-  const accepted = myProposals.filter((p) => p.status === 'accepted').length;
-  const fill = c.creatorsNeeded > 0 ? Math.round((accepted / c.creatorsNeeded) * 100) : 0;
+  const fill = c.creatorsNeeded > 0 ? Math.round((acceptedCount / c.creatorsNeeded) * 100) : 0;
 
   return (
     <div className="container-page py-6 sm:py-8 space-y-6 max-w-3xl">
@@ -41,7 +74,6 @@ export default function CampaignDetailBrand() {
         <ArrowLeft className="w-4 h-4" /> Back to campaigns
       </Link>
 
-      {/* Header */}
       <header className="card overflow-hidden">
         <ChannelArt name={c.title} seed={c.id} height={96} className="rounded-none" />
         <div className="p-5 sm:p-6 -mt-8 sm:-mt-10">
@@ -76,6 +108,17 @@ export default function CampaignDetailBrand() {
                   Close campaign
                 </Button>
               )}
+              {c.status === 'closed' && (
+                <Button size="sm" onClick={async () => {
+                  try { await setCampaignStatus(c.id, 'published'); push('Reopened', 'info'); }
+                  catch (err) { push(isApiError(err) ? err.message : 'Failed to reopen.', 'error'); }
+                }}>
+                  Reopen
+                </Button>
+              )}
+              <Link to={`/brand/campaigns/${c.id}/analytics`} className="btn btn-secondary btn-sm">
+                <BarChart3 className="w-3.5 h-3.5" /> Analytics
+              </Link>
             </div>
           </div>
           <p className="text-[15px] text-ink-700 mt-4 whitespace-pre-line leading-relaxed">{c.description}</p>
@@ -86,12 +129,11 @@ export default function CampaignDetailBrand() {
         items={[
           { label: 'Budget / creator', value: currency(c.budgetPerCreator) },
           { label: 'Deadline', value: fmtDate(c.applicationDeadline) },
-          { label: 'Creators', value: `${accepted} / ${c.creatorsNeeded}` },
+          { label: 'Creators', value: `${acceptedCount} / ${c.creatorsNeeded}` },
           { label: 'Min followers', value: c.minFollowers?.toLocaleString() ?? 'None' },
         ]}
       />
 
-      {/* Fill rate */}
       <section className="card p-5 sm:p-6">
         <div className="flex items-center justify-between mb-3">
           <div className="eyebrow">Roster fill rate</div>
@@ -106,13 +148,12 @@ export default function CampaignDetailBrand() {
 
       <section className="card p-5 sm:p-6">
         <SectionHeader eyebrow="Brief" title="Details" />
-        <dl className="mt-5 grid sm:grid-cols-2 gap-x-10 gap-y-5 text-sm">
+        <dl className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-5 text-sm">
           <Row label="Deliverables"><span className="font-sans font-normal text-ink-700">{c.deliverables || '—'}</span></Row>
           <Row label="Status">{c.status}</Row>
         </dl>
       </section>
 
-      {/* Proposals */}
       <section className="card p-5 sm:p-6">
         <div className="flex items-center justify-between mb-3 gap-3">
           <SectionHeader eyebrow="Inbox" title="Recent proposals" />
@@ -120,7 +161,7 @@ export default function CampaignDetailBrand() {
             Manage <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
-        {myProposals.length === 0 ? (
+        {proposals.length === 0 ? (
           <EmptyState
             icon={<Inbox className="w-5 h-5" />}
             title="No proposals yet"
@@ -128,7 +169,7 @@ export default function CampaignDetailBrand() {
           />
         ) : (
           <ul className="mt-2 divide-y divide-ink-200/60">
-            {myProposals.slice(0, 5).map((p) => (
+            {proposals.slice(0, 5).map((p) => (
               <li key={p.id}>
                 <Link
                   to={`/brand/campaigns/${c.id}/proposals`}
@@ -150,7 +191,11 @@ export default function CampaignDetailBrand() {
       <ConfirmDialog
         open={confirmPublish}
         onClose={() => setConfirmPublish(false)}
-        onConfirm={() => { setCampaignStatus(c.id, 'published'); push('Campaign published', 'success'); }}
+        onConfirm={async () => {
+          try { await setCampaignStatus(c.id, 'published'); push('Campaign published', 'success'); }
+          catch (err) { push(isApiError(err) ? err.message : 'Failed to publish.', 'error'); }
+          setConfirmPublish(false);
+        }}
         title="Publish this campaign?"
         description="Once published, creators can apply and you won’t be able to edit or delete it."
         confirmLabel="Publish"
@@ -158,7 +203,11 @@ export default function CampaignDetailBrand() {
       <ConfirmDialog
         open={confirmClose}
         onClose={() => setConfirmClose(false)}
-        onConfirm={() => { setCampaignStatus(c.id, 'closed'); push('Campaign closed', 'info'); }}
+        onConfirm={async () => {
+          try { await setCampaignStatus(c.id, 'closed'); push('Campaign closed', 'info'); }
+          catch (err) { push(isApiError(err) ? err.message : 'Failed to close.', 'error'); }
+          setConfirmClose(false);
+        }}
         title="Close this campaign?"
         description="The campaign will no longer accept new applications. Existing proposals can still be reviewed."
         confirmLabel="Close campaign"
@@ -166,7 +215,15 @@ export default function CampaignDetailBrand() {
       <ConfirmDialog
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
-        onConfirm={() => { deleteCampaign(c.id); push('Campaign deleted', 'info'); navigate('/brand/campaigns'); }}
+        onConfirm={async () => {
+          try {
+            await deleteCampaign(c.id);
+            push('Campaign deleted', 'info');
+            navigate('/brand/campaigns');
+          } catch (err) {
+            push(isApiError(err) ? err.message : 'Failed to delete.', 'error');
+          }
+        }}
         title="Delete this draft?"
         description="This campaign is still a draft and will be removed permanently."
         confirmLabel="Delete"

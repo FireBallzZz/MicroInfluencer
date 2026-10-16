@@ -38,7 +38,7 @@ export function Wordmark({
       onClick={onClick}
       aria-label={ariaLabel}
       className={clsx(
-        'group inline-flex items-center gap-2 focus:outline-none',
+        'group inline-flex items-center gap-2 outline-none focus:outline-none focus:ring-0 focus-visible:ring-1 focus-visible:ring-ember-500/40 rounded-sm select-none',
         className,
       )}
     >

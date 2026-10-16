@@ -60,7 +60,7 @@ export function Modal({
         aria-modal="true"
         aria-label={title}
         className={clsx(
-          'relative bg-white rounded-t-2xl sm:rounded-2xl shadow-pop w-full overflow-hidden',
+          'relative bg-paper-50 border border-ink-200 rounded-t-2xl sm:rounded-2xl shadow-pop w-full overflow-hidden flex flex-col max-h-[88vh] sm:max-h-[90vh]',
           'safe-bottom',
           size === 'sm' && 'sm:max-w-sm',
           size === 'md' && 'sm:max-w-lg',
@@ -68,24 +68,24 @@ export function Modal({
         )}
       >
         {/* Bottom-sheet drag handle for mobile */}
-        <div className="sm:hidden flex justify-center pt-2">
+        <div className="sm:hidden flex justify-center pt-2 shrink-0">
           <div className="w-10 h-1 rounded-full bg-ink-200" />
         </div>
         {title && (
-          <div className="flex items-center justify-between px-5 py-4 border-b border-ink-100">
-            <h3 className="text-base font-semibold text-ink-900">{title}</h3>
+          <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-ink-200 shrink-0">
+            <h3 className="text-base font-semibold text-ink-900 truncate pr-2">{title}</h3>
             <button
               ref={closeBtnRef}
               onClick={onClose}
-              className="p-1 rounded-full hover:bg-ink-100 text-ink-500"
+              className="p-1 rounded-md hover:bg-ink-100 text-ink-500 shrink-0"
               aria-label="Close dialog"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         )}
-        <div className="p-5 max-h-[70vh] overflow-y-auto">{children}</div>
-        {footer && <div className="px-5 py-4 border-t border-ink-100 bg-ink-50/60 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">{footer}</div>}
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1">{children}</div>
+        {footer && <div className="px-4 sm:px-5 py-3.5 sm:py-4 border-t border-ink-200 bg-paper-100/60 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 shrink-0">{footer}</div>}
       </div>
     </div>
   );

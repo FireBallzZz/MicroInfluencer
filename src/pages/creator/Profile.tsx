@@ -1,13 +1,50 @@
 import { Link } from 'react-router-dom';
-import { useStore, profileCompletion } from '../../state/Store';
+import { useEffect, useState } from 'react';
+import { useStore, loadCreatorProfile, profileCompletion } from '../../state/Store';
 import { fmtNumber, fmtDate, currency } from '../../data/seed';
 import {
   PlatformIcon, ChannelArt, VerifiedBadge, StatRow, SectionHeader, PageHeader,
 } from '../../components/ui';
-import { BadgeCheck, MapPin, ArrowUpRight, Pencil, Link as LinkIcon, Plus, Sparkles, Youtube } from 'lucide-react';
+import { CheckCircle2, MapPin, ArrowUpRight, Pencil, Link as LinkIcon, Plus, Sparkles, Youtube } from 'lucide-react';
 
 export default function CreatorProfile() {
-  const { creator, connectedAccounts } = useStore();
+  const { creator, connectedAccounts, loading, errors } = useStore();
+  const [bootError, setBootError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        await loadCreatorProfile();
+      } catch (err) {
+        if (!cancelled) {
+          const msg = (err as Error).message || 'Could not load your profile.';
+          setBootError(msg);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (bootError) {
+    return (
+      <div className="container-page py-8">
+        <div className="card p-6 text-sm text-rose-700">{bootError}</div>
+      </div>
+    );
+  }
+  if (!creator) {
+    return (
+      <div className="container-page py-8">
+        <div className="card p-8 text-center text-sm text-ink-500">
+          {loading.creatorMe ? 'Loading your profile…' : 'No profile data yet.'}
+        </div>
+      </div>
+    );
+  }
+
   const yt = connectedAccounts.find((a) => a.platform === 'YouTube');
   const completion = profileCompletion(creator);
   const isComplete = completion === 100;
@@ -38,8 +75,8 @@ export default function CreatorProfile() {
           ) : (
             <ChannelArt name={creator.fullName} seed={creator.id} height={120} className="rounded-none w-full" />
           )}
-          <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-10 sm:-mt-12">
-            <div className="flex items-end gap-4 min-w-0">
+          <div className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-10 sm:-mt-12">
+            <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4 min-w-0">
               {creator.avatarUrl ? (
                 <img
                   src={creator.avatarUrl}
@@ -56,10 +93,10 @@ export default function CreatorProfile() {
               )}
               <div className="min-w-0 pb-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="font-display text-2xl sm:text-3xl text-ink-900 tracking-[-0.02em] leading-none truncate">
+                  <h1 className="font-display text-xl sm:text-2xl md:text-3xl text-ink-900 tracking-[-0.02em] leading-tight break-words">
                     {creator.fullName}
                   </h1>
-                  {isVerified && <BadgeCheck className="w-5 h-5 text-ember-500 shrink-0" />}
+                  {isVerified && <CheckCircle2 className="w-5 h-5 text-ember-500 shrink-0" />}
                 </div>
                 <div className="text-sm text-ink-500 mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
                   <span className="inline-flex items-center gap-1">
@@ -88,7 +125,7 @@ export default function CreatorProfile() {
           </div>
         </article>
 
-        <div className="grid lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-8 space-y-6">
             {/* About */}
             <section className="card p-5 sm:p-6">
@@ -119,14 +156,14 @@ export default function CreatorProfile() {
                   <LinkIcon className="w-6 h-6 text-ink-300 mx-auto mb-2" />
                   <div className="text-sm text-ink-700 font-semibold">No portfolio links yet</div>
                   <div className="text-xs text-ink-500 mt-1">
-                    Add up to 3 links — YouTube, Instagram, TikTok, articles, anything.
+                    Add up to 10 links — YouTube, Instagram, TikTok, articles, anything.
                   </div>
                   <Link to="/creator/profile/edit" className="btn btn-secondary btn-sm mt-4">
                     <Plus className="w-3.5 h-3.5" /> Add link
                   </Link>
                 </div>
               ) : (
-                <ul className="mt-5 grid sm:grid-cols-2 gap-3 stagger">
+                <ul className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 stagger">
                   {creator.portfolio.map((p) => (
                     <li key={p.id}>
                       <a
@@ -180,7 +217,7 @@ export default function CreatorProfile() {
               </div>
               <p className="mt-2.5 text-sm text-ink-700 leading-relaxed">
                 {yt
-                  ? <>YouTube <span className="font-semibold">@{yt.handle}</span> connected. Last synced {fmtDate(yt.lastSyncedAt)}.</>
+                  ? <>YouTube connected. Last synced {fmtDate(yt.lastSyncedAt)}.</>
                   : 'Connect YouTube to verify your stats and unlock the Verified badge.'}
               </p>
               <Link to="/creator/accounts" className="btn btn-secondary btn-sm mt-3 w-full sm:w-auto">

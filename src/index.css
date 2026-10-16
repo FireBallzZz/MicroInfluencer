@@ -38,6 +38,9 @@
   }
   p { line-height: 1.65; }
   ::selection { background: #1B1814; color: #FBF9F3; }
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
   *:focus-visible {
     @apply outline-none ring-2 ring-ember-500/40 ring-offset-2 ring-offset-paper-50;
   }
@@ -50,7 +53,7 @@
 
 /* ---------- Components ---------- */
 @layer components {
-  .container-page { @apply max-w-7xl mx-auto px-5 sm:px-8 lg:px-10; }
+  .container-page { @apply max-w-7xl mx-auto px-4 sm:px-8 lg:px-10; }
 
   /* Buttons */
   .btn {
@@ -157,11 +160,13 @@
   /* Headline display */
   .display-xl {
     @apply font-display text-ink-900;
-    font-size: clamp(2.5rem, 6.5vw, 5.5rem);
-    line-height: 1.02;
+    font-size: clamp(1.65rem, 6.5vw, 5.5rem);
+    line-height: 1.05;
     letter-spacing: -0.035em;
     font-variation-settings: 'opsz' 144, 'SOFT' 50;
     font-weight: 500;
+    word-break: break-word;
+    overflow-wrap: anywhere;
   }
   .display-lg {
     @apply font-display text-ink-900;

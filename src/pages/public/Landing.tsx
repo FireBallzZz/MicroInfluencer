@@ -133,11 +133,11 @@ function Hero({
           </div>
         </div>
 
-        <div className="mt-10 sm:mt-14 grid lg:grid-cols-12 gap-10 lg:gap-16 items-end">
-          <div className="lg:col-span-8">
+        <div className="mt-10 sm:mt-14 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-end">
+          <div className="lg:col-span-8 min-w-0">
             <Reveal>
               <h1 className="display-xl">
-                A marketplace for
+                <span>A marketplace for</span>
                 <span className="block">
                   <span className="relative inline-block">
                     <span className="relative z-10 italic font-medium">micro</span>
@@ -147,10 +147,9 @@ function Hero({
                     />
                   </span>
                   <span>-influencers</span>
-                  <span className="text-ink-400"> &amp; </span>
-                  <br className="hidden sm:block" />
-                  the brands that hire them.
+                  <span className="text-ink-400"> &amp;</span>
                 </span>
+                <span className="block">the brands that hire them.</span>
               </h1>
             </Reveal>
 
@@ -164,15 +163,15 @@ function Hero({
             </Reveal>
 
             <Reveal delay={200}>
-              <div className="mt-7 sm:mt-9 flex flex-wrap items-center gap-3">
+              <div className="mt-7 sm:mt-9 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <button
                   onClick={() => navigate('/register/role')}
-                  className="btn btn-primary btn-lg"
+                  className="btn btn-primary btn-lg w-full sm:w-auto"
                 >
                   Try the demo
                   <Search className="w-4 h-4" />
                 </button>
-                <a href="#how" className="btn btn-secondary btn-lg">
+                <a href="#how" className="btn btn-secondary btn-lg w-full sm:w-auto">
                   <Play className="w-3.5 h-3.5 fill-current" />
                   See how it works
                 </a>
@@ -180,9 +179,9 @@ function Hero({
             </Reveal>
           </div>
 
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-4 min-w-0">
             <Reveal delay={300}>
-              <div className="card p-5 sm:p-6">
+              <div className="card p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <span className="eyebrow">Try a search</span>
                   <span className="tag tag-ember">Demo data</span>
@@ -206,28 +205,28 @@ function Hero({
                 </div>
 
                 <form onSubmit={(e) => { e.preventDefault(); onSearch(); }} className="mt-3 flex items-center border border-ink-200 bg-paper-50 rounded-md focus-within:border-ink-900 transition-colors">
-                  <Search className="w-4 h-4 text-ink-400 ml-3.5 shrink-0" />
+                  <Search className="w-4 h-4 text-ink-400 ml-3 shrink-0" />
                   <input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder={tab === 'talent' ? 'Try “beauty · 30K-80K”' : 'Try “unboxing · <$2k”'}
-                    className="flex-1 h-11 px-3 bg-transparent text-sm text-ink-900 placeholder:text-ink-400 outline-none"
+                    className="flex-1 min-w-0 h-10 sm:h-11 px-2.5 sm:px-3 bg-transparent text-xs sm:text-sm text-ink-900 placeholder:text-ink-400 outline-none"
                   />
                   <button
                     type="submit"
-                    className="h-11 px-4 text-ink-900 hover:text-ember-600 text-[13px] font-semibold flex items-center gap-1 border-l border-ink-200"
+                    className="h-10 sm:h-11 px-3 sm:px-4 text-ink-900 hover:text-ember-600 text-xs sm:text-[13px] font-semibold flex items-center gap-1 border-l border-ink-200 shrink-0"
                     aria-label="Search"
                   >
                     Go <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </form>
 
-                <div className="mt-4 flex flex-wrap gap-1.5">
+                <div className="mt-3 sm:mt-4 flex flex-wrap gap-1.5">
                   {(tab === 'talent' ? TALENT : BRIEFS).slice(0, 6).map((s) => (
                     <button
                       key={s}
                       onClick={onSearch}
-                      className="tag tag-paper hover:bg-ink-100 transition-colors"
+                      className="tag tag-paper text-[10px] sm:text-[11px] px-2 py-0.5 sm:py-1 hover:bg-ink-100 transition-colors"
                     >
                       {s}
                     </button>
@@ -239,7 +238,7 @@ function Hero({
         </div>
 
         <Reveal delay={300}>
-          <div className="mt-14 sm:mt-20 grid grid-cols-2 sm:grid-cols-4 gap-y-8 gap-x-6 border-t border-ink-200 pt-8">
+          <div className="mt-10 sm:mt-20 grid grid-cols-2 sm:grid-cols-4 gap-y-6 sm:gap-y-8 gap-x-4 sm:gap-x-6 border-t border-ink-200 pt-6 sm:pt-8">
             <Stat
               value={SHOWCASE_CREATORS.length * 80 + 8400}
               label="Demo creators in pool"
@@ -298,7 +297,7 @@ function Stat({
     <div className="group">
       <div
         className="font-display font-semibold leading-none text-ink-900 tracking-[-0.025em]
-                   text-[clamp(1.75rem,3.4vw,2.6rem)]
+                   text-[clamp(1.5rem,3.4vw,2.6rem)]
                    transition-colors duration-300 ease-out-quint
                    group-hover:text-ember-700"
       >
@@ -310,11 +309,11 @@ function Stat({
           duration={1500}
         />
       </div>
-      <div className="mt-2.5 text-[12px] font-semibold text-ink-700 leading-snug">
+      <div className="mt-2 sm:mt-2.5 text-[11px] sm:text-[12px] font-semibold text-ink-700 leading-snug">
         {label}
       </div>
       {hint && (
-        <div className="mt-1 text-[11px] text-ink-400 leading-snug font-mono uppercase tracking-[0.12em]">
+        <div className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] text-ink-400 leading-snug font-mono uppercase tracking-[0.08em] sm:tracking-[0.12em]">
           {hint}
         </div>
       )}
@@ -397,7 +396,7 @@ function TickerBar() {
 function Manifesto() {
   return (
     <section className="container-page py-20 sm:py-28">
-      <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
         <div className="lg:col-span-4">
           <Reveal>
             <span className="eyebrow">/ 01 — The problem</span>
@@ -421,7 +420,7 @@ function Manifesto() {
           </Reveal>
 
           <Reveal delay={200}>
-            <ul className="mt-10 grid sm:grid-cols-2 gap-x-10 gap-y-5 text-sm">
+            <ul className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-5 text-sm">
               {[
                 ['Verified YouTube stats', 'No inflated follower counts. Engagement and views come straight from the API.'],
                 ['Briefs with budgets',    'Every campaign lists deliverables, deadline and per-creator rate up front.'],
@@ -452,7 +451,7 @@ function MarketplaceSection() {
   return (
     <section id="marketplace" className="bg-paper-100/60 border-y border-ink-200 py-20 sm:py-28">
       <div className="container-page">
-        <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-end mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-end mb-12">
           <div className="lg:col-span-7">
             <Reveal>
               <span className="eyebrow">/ 02 — Marketplace</span>
@@ -470,7 +469,7 @@ function MarketplaceSection() {
           </Reveal>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           {/* Creators */}
           <Reveal>
             <div className="flex items-end justify-between mb-4">
@@ -492,12 +491,13 @@ function MarketplaceSection() {
                         <div className="font-semibold text-ink-900 truncate">{c.fullName}</div>
                         {c.verified && <BadgeCheck className="w-3.5 h-3.5 text-ember-500 shrink-0" />}
                       </div>
-                      <div className="mt-0.5 text-xs text-ink-500 truncate flex items-center gap-1.5">
-                        <PlatformIcon platform={c.primaryPlatform} />
-                        {c.niche}
-                        <span className="text-ink-300">·</span>
-                        <MapPin className="w-3 h-3" />
-                        {c.location}
+                      <div className="mt-0.5 text-xs text-ink-500 flex items-center gap-1.5 min-w-0">
+                        <span className="shrink-0"><PlatformIcon platform={c.primaryPlatform} /></span>
+                        <span className="truncate">{c.niche}</span>
+                        <span className="text-ink-300 shrink-0">·</span>
+                        <span className="truncate">{c.location}</span>
+                        <span className="sm:hidden text-ink-300 shrink-0">·</span>
+                        <span className="sm:hidden font-mono font-semibold text-ink-900 shrink-0">{c.engagementRate}% ER</span>
                       </div>
                     </div>
                     <div className="hidden sm:block text-right shrink-0">
@@ -526,7 +526,7 @@ function MarketplaceSection() {
                     className="card card-hover p-4 group"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="text-xs text-ink-500 flex items-center gap-1.5 mb-1">
                           <Avatar name={c.brandName} size="xs" tone="ink" />
                           <span className="truncate">{c.brandName}</span>
@@ -589,7 +589,7 @@ function HowItWorks() {
           </Reveal>
         </div>
 
-        <div className="mt-12 grid md:grid-cols-3 gap-px bg-ink-700/70 border border-ink-700/70 stagger">
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-px bg-ink-700/70 border border-ink-700/70 stagger">
           <Step
             n="01"
             side="Creator"
@@ -654,7 +654,7 @@ function Roles() {
   const navigate = useNavigate();
   return (
     <section className="container-page py-20 sm:py-28">
-      <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-end mb-12 sm:mb-16">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-end mb-12 sm:mb-16">
         <div className="lg:col-span-7">
           <Reveal>
             <span className="eyebrow">/ 04 — Pick a side</span>
@@ -672,7 +672,7 @@ function Roles() {
         </Reveal>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Reveal>
           <RoleCard
             id="creators"
@@ -755,7 +755,7 @@ function RoleCard({
         {body}
       </p>
 
-      <ul className="relative mt-7 grid sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+      <ul className="relative mt-7 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
         {points.map((p) => (
           <li key={p} className="flex items-start gap-2.5">
             <span
@@ -809,7 +809,7 @@ function LiveMarket() {
   return (
     <section id="market" className="bg-paper-100/60 border-y border-ink-200 py-20 sm:py-28">
       <div className="container-page">
-        <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
           <div className="lg:col-span-5">
             <Reveal>
               <span className="eyebrow">/ 05 — Demo activity</span>
@@ -887,7 +887,7 @@ function LiveMarket() {
             </Reveal>
 
             <Reveal delay={200}>
-              <div className="mt-5 grid sm:grid-cols-3 gap-px border border-ink-200 bg-ink-200">
+              <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-px border border-ink-200 bg-ink-200">
                 <MiniStat label="Active briefs"      value={String(seedCampaigns.filter(c => c.status === 'published').length)} />
                 <MiniStat label="Open proposals"     value="12" hint="demo" />
                 <MiniStat label="Avg. fill time"     value="4.6d" hint="demo" />
@@ -921,7 +921,7 @@ function MiniStat({ label, value, hint }: { label: string; value: string; hint?:
 function BriefAnatomy() {
   return (
     <section className="container-page py-20 sm:py-28">
-      <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
         <div className="lg:col-span-4">
           <Reveal>
             <span className="eyebrow">/ 06 — Brief anatomy</span>
@@ -935,10 +935,10 @@ function BriefAnatomy() {
           </Reveal>
         </div>
 
-        <div className="lg:col-span-8">
+        <div className="lg:col-span-8 min-w-0">
           <Reveal delay={100}>
-            <article className="card p-6 sm:p-8">
-              <header className="flex items-start justify-between gap-4">
+            <article className="card p-4 sm:p-8">
+              <header className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="tag tag-ember">Brief</span>
@@ -960,7 +960,7 @@ function BriefAnatomy() {
                 </div>
               </header>
 
-              <dl className="mt-7 grid sm:grid-cols-2 gap-6 text-sm">
+              <dl className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
                 <DefRow label="Deliverables">
                   1 dedicated video (60–90s) + 1 short reel cut
                 </DefRow>
@@ -1027,7 +1027,7 @@ function FinalCTA({ dashboardLink, onStart }: { dashboardLink: string | null; on
             aria-hidden
           />
 
-          <div className="relative grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+          <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             <div className="lg:col-span-7">
               <span className="eyebrow text-ink-400">/ 07 — Get started</span>
               <h2 className="display-lg mt-3 text-paper-50">
@@ -1082,7 +1082,7 @@ function Reveal({
   return (
     <div
       ref={ref}
-      className={`reveal ${visible ? 'is-visible' : ''} ${className ?? ''}`}
+      className={`reveal min-w-0 ${visible ? 'is-visible' : ''} ${className ?? ''}`}
       data-delay={delay}
     >
       {children}

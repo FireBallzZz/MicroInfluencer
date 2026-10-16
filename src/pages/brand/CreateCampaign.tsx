@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CampaignForm, CampaignFormValues, validateCampaign } from './CampaignForm';
-import { addCampaign, updateCampaign, useStore } from '../../state/Store';
+import { addCampaign, setCampaignStatus, loadBrandCampaigns, useStore, loadBrandProfile } from '../../state/Store';
 import { Button, PageHeader } from '../../components/ui';
 import { useToast } from '../../state/ToastContext';
+import { useEffect } from 'react';
+import { isApiError } from '../../api/client';
 
 const blank: CampaignFormValues = {
   title: '',
@@ -23,26 +25,36 @@ export default function CreateCampaign() {
   const { brand } = useStore();
   const [values, setValues] = useState<CampaignFormValues>(blank);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = useState(false);
 
-  const handle = (action: 'draft' | 'publish') => {
+  useEffect(() => {
+    loadBrandProfile().catch(() => undefined);
+  }, []);
+
+  const handle = async (action: 'draft' | 'publish') => {
     const errs = validateCampaign(values);
     setErrors(errs);
     if (Object.keys(errs).length) {
       push('Please fix the highlighted fields', 'error');
       return;
     }
-    const created = addCampaign({
-      ...values,
-      brandId: brand.id,
-      brandName: brand.companyName,
-    });
-    if (action === 'publish') {
-      updateCampaign(created.id, { status: 'published' });
-      push('Campaign published', 'success');
-    } else {
-      push('Draft saved', 'success');
+    setSubmitting(true);
+    try {
+      const created = await addCampaign(values);
+      if (action === 'publish') {
+        await setCampaignStatus(created.id, 'published');
+        push('Campaign published', 'success');
+      } else {
+        push('Draft saved', 'success');
+      }
+      await loadBrandCampaigns();
+      navigate(`/brand/campaigns/${created.id}`);
+    } catch (err) {
+      const msg = isApiError(err) ? err.message : 'Could not create campaign.';
+      push(msg, 'error');
+    } finally {
+      setSubmitting(false);
     }
-    navigate('/brand/campaigns');
   };
 
   return (
@@ -54,9 +66,15 @@ export default function CreateCampaign() {
       />
       <CampaignForm values={values} onChange={setValues} errors={errors} />
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
-        <Button variant="ghost" onClick={() => navigate('/brand/campaigns')} className="w-full sm:w-auto">Cancel</Button>
-        <Button variant="secondary" onClick={() => handle('draft')} className="w-full sm:w-auto">Save draft</Button>
-        <Button onClick={() => handle('publish')} className="w-full sm:w-auto">Publish</Button>
+        <Button variant="ghost" onClick={() => navigate('/brand/campaigns')} className="w-full sm:w-auto" disabled={submitting}>
+          Cancel
+        </Button>
+        <Button variant="secondary" onClick={() => handle('draft')} className="w-full sm:w-auto" disabled={submitting}>
+          {submitting ? 'Saving…' : 'Save draft'}
+        </Button>
+        <Button onClick={() => handle('publish')} className="w-full sm:w-auto" disabled={submitting}>
+          {submitting ? 'Publishing…' : 'Publish'}
+        </Button>
       </div>
     </div>
   );

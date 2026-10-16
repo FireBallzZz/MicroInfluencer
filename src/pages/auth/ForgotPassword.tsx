@@ -2,21 +2,35 @@ import { Link, useNavigate } from 'react-router-dom';
 import AuthShell from '../../components/AuthShell';
 import { FormField, Input, Button } from '../../components/ui';
 import { useState } from 'react';
+import { useToast } from '../../state/ToastContext';
+import { ApiError, isApiError } from '../../api/client';
+import { requestPasswordReset } from '../../api/endpoints';
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
+  const { push } = useToast();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email) return;
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await requestPasswordReset(email);
       setSent(true);
-      setLoading(false);
       setTimeout(() => navigate('/verify-code', { state: { email } }), 600);
-    }, 400);
+    } catch (err) {
+      // The backend always returns 200 with a generic message. Surface anything else.
+      if (isApiError(err)) {
+        push(err.message, 'error');
+      } else {
+        push('Could not send a reset code. Try again.', 'error');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

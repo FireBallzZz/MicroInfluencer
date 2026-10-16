@@ -64,11 +64,11 @@ export function CampaignCard({
 
 function Cell({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="bg-paper-50 py-2 px-3">
-      <div className="eyebrow !text-[9px]">{label}</div>
-      <div className="num-display text-sm mt-0.5">
+    <div className="bg-paper-50 py-2 px-1.5 sm:px-3 text-center min-w-0 overflow-hidden">
+      <div className="eyebrow !text-[9px] truncate">{label}</div>
+      <div className="num-display text-xs sm:text-sm mt-0.5 truncate">
         {value}
-        {hint && <span className="text-[10px] text-ink-500 font-sans font-normal ml-1">{hint}</span>}
+        {hint && <span className="text-[10px] text-ink-500 font-sans font-normal ml-0.5 sm:ml-1 hidden sm:inline">{hint}</span>}
       </div>
     </div>
   );

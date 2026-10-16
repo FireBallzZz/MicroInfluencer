@@ -1,11 +1,46 @@
 import { Link } from 'react-router-dom';
 import { Pencil, ExternalLink } from 'lucide-react';
-import { useStore } from '../../state/Store';
+import { useEffect, useState } from 'react';
+import { useStore, loadBrandProfile, loadBrandCampaigns } from '../../state/Store';
 import { PageHeader, SectionHeader, StatRow, ChannelArt } from '../../components/ui';
 
 export default function BrandProfile() {
   const { brand, campaigns } = useStore();
-  const mine = campaigns.filter((c) => c.brandId === brand.id);
+  const [bootError, setBootError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        await Promise.all([loadBrandProfile(), loadBrandCampaigns()]);
+      } catch (err) {
+        if (!cancelled) {
+          const msg = (err as Error).message || 'Could not load your profile.';
+          setBootError(msg);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (bootError) {
+    return (
+      <div className="container-page py-8">
+        <div className="card p-6 text-sm text-rose-700">{bootError}</div>
+      </div>
+    );
+  }
+  if (!brand) {
+    return (
+      <div className="container-page py-8">
+        <div className="card p-8 text-center text-sm text-ink-500">Loading your profile…</div>
+      </div>
+    );
+  }
+
+  const mine = campaigns.filter((c) => c.brandId === brand.id || !c.brandId);
   const published = mine.filter((c) => c.status === 'published').length;
   const draft = mine.filter((c) => c.status === 'draft').length;
   const closed = mine.filter((c) => c.status === 'closed').length;
@@ -25,21 +60,13 @@ export default function BrandProfile() {
 
       <div className="card overflow-hidden">
         {brand.coverUrl ? (
-          <img
-            src={brand.coverUrl}
-            alt="Cover"
-            className="w-full h-[160px] sm:h-[200px] object-cover"
-          />
+          <img src={brand.coverUrl} alt="Cover" className="w-full h-[160px] sm:h-[200px] object-cover" />
         ) : (
           <ChannelArt name={brand.companyName} seed={brand.id} height={120} className="rounded-none w-full" />
         )}
         <div className="p-5 sm:p-6 flex items-end gap-4 -mt-10 sm:-mt-12">
           {brand.logoUrl ? (
-            <img
-              src={brand.logoUrl}
-              alt={brand.companyName}
-              className="w-20 sm:w-24 h-20 sm:h-24 rounded-md object-cover ring-4 ring-paper-50 shrink-0"
-            />
+            <img src={brand.logoUrl} alt={brand.companyName} className="w-20 sm:w-24 h-20 sm:h-24 rounded-md object-cover ring-4 ring-paper-50 shrink-0" />
           ) : (
             <ChannelArt name={brand.companyName} seed={brand.id} height={72} className="w-20 sm:w-24 rounded-md ring-4 ring-paper-50 shrink-0" />
           )}
@@ -49,12 +76,7 @@ export default function BrandProfile() {
             </h1>
             <div className="text-sm text-ink-500 mt-1.5">{brand.industry}</div>
             {brand.website && (
-              <a
-                href={brand.website}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="mt-2 text-sm text-ember-600 hover:text-ember-700 inline-flex items-center gap-1 font-semibold"
-              >
+              <a href={brand.website} target="_blank" rel="noreferrer noopener" className="mt-2 text-sm text-ember-600 hover:text-ember-700 inline-flex items-center gap-1 font-semibold">
                 <ExternalLink className="w-3.5 h-3.5" /> {brand.website}
               </a>
             )}

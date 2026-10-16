@@ -1,6 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { useStore } from '../../state/Store';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { CampaignCard } from '../../components/CampaignCard';
 import {
   EmptyState, Input, Select, Button, SectionHeader, PageHeader,
@@ -10,44 +9,63 @@ import { NICHES, PLATFORMS, currency } from '../../data/seed';
 import {
   Search, X, SlidersHorizontal, Megaphone, Calendar, DollarSign, Sparkles, Compass,
 } from 'lucide-react';
+import { useStore, loadCreatorCampaigns, loadCreatorProfile } from '../../state/Store';
+
+type CampaignFilters = {
+  q: string;
+  niche: string;
+  platform: string;
+  minBudget: string;
+  deadlineBefore: string;
+};
 
 export default function CampaignDiscovery() {
-  const { campaigns, creator } = useStore();
-  const [params, setParams] = useSearchParams();
-  const [keyword, setKeyword] = useState(params.get('q') ?? '');
-  const [niche, setNiche] = useState<string>('');
-  const [platform, setPlatform] = useState<string>('');
-  const [minBudget, setMinBudget] = useState('');
-  const [deadline, setDeadline] = useState('');
+  const { campaigns, creator, loading, errors } = useStore();
+  const [filters, setFilters] = useState<CampaignFilters>({ q: '', niche: '', platform: '', minBudget: '', deadlineBefore: '' });
   const [showFilters, setShowFilters] = useState(false);
 
-  const reset = () => {
-    setKeyword(''); setNiche(''); setPlatform(''); setMinBudget(''); setDeadline('');
-    setParams({});
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        await Promise.all([loadCreatorCampaigns(), loadCreatorProfile()]);
+      } catch {
+        if (cancelled) return;
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const refresh = () => {
+    loadCreatorCampaigns({
+      q: filters.q || undefined,
+      niche: (filters.niche as any) || undefined,
+      platform: (filters.platform as any) || undefined,
+      minBudget: filters.minBudget ? Number(filters.minBudget) : undefined,
+      deadlineBefore: filters.deadlineBefore || undefined,
+    });
   };
 
-  const filtered = useMemo(() => {
-    return campaigns
-      .filter((c) => c.status === 'published')
-      .filter((c) => {
-        if (keyword && !`${c.title} ${c.brandName} ${c.description}`.toLowerCase().includes(keyword.toLowerCase())) return false;
-        if (niche && c.category !== niche) return false;
-        if (platform && c.requiredPlatform !== platform) return false;
-        if (minBudget && c.budgetPerCreator < Number(minBudget)) return false;
-        if (deadline && new Date(c.applicationDeadline) > new Date(deadline)) return false;
-        return true;
-      });
-  }, [campaigns, keyword, niche, platform, minBudget, deadline]);
+  useEffect(() => {
+    const id = setTimeout(refresh, 250);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.q, filters.niche, filters.platform, filters.minBudget, filters.deadlineBefore]);
 
-  // Sort eligible first.
+  const reset = () => setFilters({ q: '', niche: '', platform: '', minBudget: '', deadlineBefore: '' });
+
+  const isFiltered = Boolean(filters.q || filters.niche || filters.platform || filters.minBudget || filters.deadlineBefore);
+  const publishedCount = campaigns.filter((c) => c.status === 'published').length;
   const sorted = useMemo(() => {
     const isEligible = (c: typeof campaigns[number]) =>
-      c.requiredPlatform === creator.primaryPlatform &&
-      (!c.minFollowers || creator.followers >= c.minFollowers);
-    return [...filtered].sort((a, b) => (isEligible(b) ? 1 : 0) - (isEligible(a) ? 1 : 0));
-  }, [filtered, creator]);
-
-  const isFiltered = Boolean(keyword || niche || platform || minBudget || deadline);
+      c.requiredPlatform === creator?.primaryPlatform &&
+      (!c.minFollowers || (creator?.followers ?? 0) >= c.minFollowers);
+    return [...campaigns]
+      .filter((c) => c.status === 'published')
+      .sort((a, b) => (isEligible(b) ? 1 : 0) - (isEligible(a) ? 1 : 0));
+  }, [campaigns, creator]);
 
   return (
     <div className="container-page py-6 sm:py-8">
@@ -58,7 +76,7 @@ export default function CampaignDiscovery() {
           description={
             sorted.length > 0
               ? `${sorted.length} live brief${sorted.length === 1 ? '' : 's'}${isFiltered ? ' matching your filters' : ''}. Eligible ones surface first.`
-              : 'Live briefs from demo brands. Campaigns you’re eligible for appear first.'
+              : 'No live briefs right now. Check back soon.'
           }
           action={
             <Link to="/creator/dashboard" className="btn btn-secondary btn-md self-start sm:self-auto">
@@ -67,7 +85,6 @@ export default function CampaignDiscovery() {
           }
         />
 
-        {/* Search + filters */}
         <div className="card overflow-hidden">
           <div className="p-4 sm:p-5 flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
@@ -75,14 +92,14 @@ export default function CampaignDiscovery() {
               <Input
                 className="pl-10 h-11"
                 placeholder="Search by title, brand, or keyword"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
+                value={filters.q}
+                onChange={(e) => setFilters({ ...filters, q: e.target.value })}
               />
             </div>
             <div className="hidden sm:flex gap-2 flex-wrap">
               <Select
-                value={niche}
-                onChange={(e) => setNiche(e.target.value)}
+                value={filters.niche}
+                onChange={(e) => setFilters({ ...filters, niche: e.target.value })}
                 className="min-w-[160px]"
                 aria-label="Niche"
               >
@@ -90,8 +107,8 @@ export default function CampaignDiscovery() {
                 {NICHES.map((n) => <option key={n} value={n}>{n}</option>)}
               </Select>
               <Select
-                value={platform}
-                onChange={(e) => setPlatform(e.target.value)}
+                value={filters.platform}
+                onChange={(e) => setFilters({ ...filters, platform: e.target.value })}
                 className="min-w-[160px]"
                 aria-label="Platform"
               >
@@ -118,7 +135,31 @@ export default function CampaignDiscovery() {
           </div>
 
           {showFilters && (
-            <div className="border-t border-ink-200 p-4 sm:p-5 bg-paper-100/50 grid sm:grid-cols-3 gap-3 anim-fade-in">
+            <div className="border-t border-ink-200 p-4 sm:p-5 bg-paper-100/50 grid grid-cols-1 sm:grid-cols-3 gap-3 anim-fade-in">
+              <div className="sm:hidden">
+                <FormField label="Niche">
+                  <Select
+                    value={filters.niche}
+                    onChange={(e) => setFilters({ ...filters, niche: e.target.value })}
+                    aria-label="Niche"
+                  >
+                    <option value="">All niches</option>
+                    {NICHES.map((n) => <option key={n} value={n}>{n}</option>)}
+                  </Select>
+                </FormField>
+              </div>
+              <div className="sm:hidden">
+                <FormField label="Platform">
+                  <Select
+                    value={filters.platform}
+                    onChange={(e) => setFilters({ ...filters, platform: e.target.value })}
+                    aria-label="Platform"
+                  >
+                    <option value="">All platforms</option>
+                    {PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </Select>
+                </FormField>
+              </div>
               <FormField label="Min budget per creator">
                 <div className="relative">
                   <DollarSign className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -126,8 +167,8 @@ export default function CampaignDiscovery() {
                     type="number"
                     className="pl-9"
                     placeholder="500"
-                    value={minBudget}
-                    onChange={(e) => setMinBudget(e.target.value)}
+                    value={filters.minBudget}
+                    onChange={(e) => setFilters({ ...filters, minBudget: e.target.value })}
                   />
                 </div>
               </FormField>
@@ -137,8 +178,8 @@ export default function CampaignDiscovery() {
                   <Input
                     type="date"
                     className="pl-9"
-                    value={deadline}
-                    onChange={(e) => setDeadline(e.target.value)}
+                    value={filters.deadlineBefore}
+                    onChange={(e) => setFilters({ ...filters, deadlineBefore: e.target.value })}
                   />
                 </div>
               </FormField>
@@ -155,7 +196,7 @@ export default function CampaignDiscovery() {
               <span className="font-mono text-ink-900 font-semibold">{sorted.length}</span>
               {' '}live brief{sorted.length === 1 ? '' : 's'}
               {isFiltered && <span className="text-ink-400"> · filtered</span>}
-              {sorted[0] && sorted[0].requiredPlatform === creator.primaryPlatform && (
+              {sorted[0] && sorted[0].requiredPlatform === creator?.primaryPlatform && (
                 <>
                   <span className="text-ink-300 mx-1.5">·</span>
                   <span className="inline-flex items-center gap-1.5">
@@ -165,7 +206,7 @@ export default function CampaignDiscovery() {
                 </>
               )}
             </span>
-            {keyword || niche || platform || minBudget || deadline ? (
+            {isFiltered ? (
               <button
                 onClick={reset}
                 className="inline-flex items-center gap-1 text-ink-500 hover:text-ink-900 transition-colors font-medium"
@@ -173,13 +214,16 @@ export default function CampaignDiscovery() {
                 <X className="w-3 h-3" /> Reset
               </button>
             ) : (
-              <span className="text-ink-400 font-mono">demo · localStorage</span>
+              <span className="text-ink-400 font-mono">live · API</span>
             )}
           </div>
         </div>
 
-        {/* Results */}
-        {sorted.length === 0 ? (
+        {loading.creatorCampaigns ? (
+          <div className="card p-10 text-center text-sm text-ink-500">Loading briefs…</div>
+        ) : errors.creatorCampaigns ? (
+          <div className="card p-10 text-center text-sm text-rose-700">{errors.creatorCampaigns}</div>
+        ) : sorted.length === 0 ? (
           <div className="card">
             <EmptyState
               icon={<Megaphone className="w-5 h-5" />}
@@ -190,20 +234,19 @@ export default function CampaignDiscovery() {
                   <X className="w-4 h-4" /> Clear filters
                 </Button>
               }
-              hint="Demo data only — no real clients."
             />
           </div>
         ) : (
-          <ul className="grid md:grid-cols-2 xl:grid-cols-3 gap-3 stagger">
+          <ul className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 stagger">
             {sorted.map((c) => {
-              const platformOk = c.requiredPlatform === creator.primaryPlatform;
-              const followersOk = !c.minFollowers || creator.followers >= c.minFollowers;
+              const platformOk = c.requiredPlatform === creator?.primaryPlatform;
+              const followersOk = !c.minFollowers || (creator?.followers ?? 0) >= c.minFollowers;
               const eligible = platformOk && followersOk;
               const reason = !platformOk
                 ? `Requires ${c.requiredPlatform}`
                 : !followersOk
-                ? `Needs ${c.minFollowers?.toLocaleString()}+ followers`
-                : undefined;
+                  ? `Needs ${c.minFollowers?.toLocaleString()}+ followers`
+                  : undefined;
               return (
                 <li key={c.id}>
                   <CampaignCard
@@ -217,9 +260,8 @@ export default function CampaignDiscovery() {
           </ul>
         )}
 
-        {/* Helper footer */}
         <div className="text-center pt-2 text-xs text-ink-400 font-mono">
-          {currency(0)} placeholder · {sorted.length} of {campaigns.filter((c) => c.status === 'published').length} live
+          {currency(0)} placeholder · {sorted.length} of {publishedCount} live
         </div>
       </div>
     </div>

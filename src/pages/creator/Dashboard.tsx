@@ -1,23 +1,23 @@
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Sparkles, Megaphone, Youtube, AlertTriangle, CheckCircle2, Compass,
-  ListChecks, Clock, ArrowUpRight,
+  ArrowRight, Megaphone, Youtube, AlertTriangle, CheckCircle2, Compass,
+  ListChecks, ArrowUpRight,
 } from 'lucide-react';
-import { useStore } from '../../state/Store';
-import { fmtNumber, fmtRelativeTime, currency, fmtDate } from '../../data/seed';
+import { useEffect, useState } from 'react';
+import {
+  useStore, loadCreatorProfile, loadMyProposals, loadCreatorCampaigns,
+} from '../../state/Store';
+import { fetchCreatorDashboard, type CreatorDashboardData } from '../../api/endpoints';
+import { fmtNumber, fmtRelativeTime, currency } from '../../data/seed';
 import { useAuth } from '../../state/AuthContext';
 import {
-  SectionHeader, ActionListItem, CampaignStatusBadge, EligibilityChip,
-  Avatar, ChannelArt, StatRow, ProposalStatusBadge,
+  SectionHeader, CampaignStatusBadge, EligibilityChip,
+  ChannelArt, StatRow, ProposalStatusBadge, PageHeader, EmptyState,
 } from '../../components/ui';
-import { PageHeader } from '../../components/ui';
+import type { CreatorProfile, MyProposal } from '../../types';
 
-/**
- * Lightweight profile-completion metric. Counts the number of meaningful
- * fields the creator has filled in. We use this in two places, so we keep
- * it local to the dashboard.
- */
-function profileCompletion(c: ReturnType<typeof useStore>['creator']): number {
+function calcLocalCompletion(c: CreatorProfile | null): number {
+  if (!c) return 0;
   const checks = [
     !!c.fullName,
     !!c.location,
@@ -28,24 +28,46 @@ function profileCompletion(c: ReturnType<typeof useStore>['creator']): number {
     c.portfolio.length >= 2,
     c.ratePerPost > 0,
   ];
-  const filled = checks.filter(Boolean).length;
-  return Math.round((filled / checks.length) * 100);
+  return Math.round((checks.filter(Boolean).length / checks.length) * 100);
 }
 
 export default function CreatorDashboard() {
   const { user } = useAuth();
-  const { creator, campaigns, proposals, connectedAccounts } = useStore();
+  const { creator, proposals, loading, errors, connectedAccounts } = useStore();
+  const [data, setData] = useState<CreatorDashboardData | null>(null);
+  const [bootError, setBootError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [dash] = await Promise.all([
+          fetchCreatorDashboard(),
+          loadCreatorProfile().catch(() => undefined),
+          loadMyProposals(),
+          loadCreatorCampaigns(),
+        ]);
+        if (!cancelled) setData(dash);
+      } catch (err) {
+        if (!cancelled) {
+          const msg = (err as Error).message || 'Could not load the dashboard.';
+          setBootError(msg);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const yt = connectedAccounts.find((a) => a.platform === 'YouTube');
-  const completion = profileCompletion(creator);
-  const published = campaigns.filter((c) => c.status === 'published');
-  const latestPublished = published
-    .slice()
-    .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
-    .slice(0, 4);
+  const completion = data?.profileCompletion ?? calcLocalCompletion(creator);
+  const ytStatus = data?.youtube;
+  const available = data?.availableCampaigns ?? [];
+  const myProposals = (data?.applications ?? (proposals as MyProposal[])) as MyProposal[];
+  const accepted = data?.acceptedCampaigns ?? [];
+  const perf = data?.performance ?? { proposalsSent: 0, accepted: 0, acceptanceRate: null };
 
-  const myProposals = proposals.filter((p) => p.creatorId === creator.id);
-  const accepted = myProposals.filter((p) => p.status === 'accepted');
   const counts = {
     pending: myProposals.filter((p) => p.status === 'pending').length,
     shortlisted: myProposals.filter((p) => p.status === 'shortlisted').length,
@@ -54,16 +76,23 @@ export default function CreatorDashboard() {
     withdrawn: myProposals.filter((p) => p.status === 'withdrawn').length,
   };
 
-  const proposalsSent = myProposals.length;
-  const acceptanceRate = proposalsSent > 0 ? Math.round((accepted.length / proposalsSent) * 100) : 0;
-
-  // Summary line that adapts to the user's state.
+  const acceptancePct = perf.acceptanceRate !== null ? Math.round(perf.acceptanceRate * 100) : 0;
   const summary =
     counts.shortlisted > 0
       ? `You have ${counts.shortlisted} shortlist${counts.shortlisted === 1 ? '' : 's'} and ${counts.pending} pending proposal${counts.pending === 1 ? '' : 's'}.`
       : counts.pending > 0
         ? `You have ${counts.pending} pending proposal${counts.pending === 1 ? '' : 's'} awaiting review.`
-        : 'A fresh slate. Browse the latest briefs to get started.';
+        : counts.accepted > 0
+          ? `You have ${counts.accepted} active collaboration${counts.accepted === 1 ? '' : 's'}.`
+          : 'A fresh slate. Browse the latest briefs to get started.';
+
+  if (bootError) {
+    return (
+      <div className="container-page py-8">
+        <div className="card p-6 text-sm text-rose-700">{bootError}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="container-page py-6 sm:py-8">
@@ -71,7 +100,7 @@ export default function CreatorDashboard() {
         eyebrow={`Today · ${new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}`}
         title={
           <>
-            Welcome back, <span className="italic font-medium">{user?.fullName.split(' ')[0]}</span>.
+            Welcome back, <span className="italic font-medium">{user?.fullName.split(' ')[0]}.</span>
           </>
         }
         description={summary}
@@ -83,8 +112,7 @@ export default function CreatorDashboard() {
       />
 
       <div className="space-y-8">
-        {/* Profile + YouTube status (one action each) */}
-        <div className="grid lg:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <article className="card p-5 sm:p-6">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -98,7 +126,6 @@ export default function CreatorDashboard() {
                     : 'Brands can filter creators by these fields.'}
                 </div>
               </div>
-              <Sparkles className="w-5 h-5 text-ember-500" />
             </div>
             <div className="mt-4 h-1.5 bg-paper-100 rounded-sm overflow-hidden">
               <div
@@ -122,7 +149,7 @@ export default function CreatorDashboard() {
               <div>
                 <div className="eyebrow">YouTube</div>
                 <div className="mt-1.5 font-display text-xl text-ink-900 tracking-[-0.01em]">
-                  {yt ? `@${yt.handle}` : 'Not connected'}
+                  {yt ? (yt.handle && yt.handle !== 'YouTube channel' ? `@${yt.handle}` : 'Connected') : 'Not connected'}
                 </div>
                 <div className="text-xs text-ink-500 mt-1">
                   {yt
@@ -137,7 +164,7 @@ export default function CreatorDashboard() {
                 <>
                   <span className="tag tag-ember"><CheckCircle2 className="w-3 h-3" /> Verified</span>
                   <span className="text-xs text-ink-500">
-                    {fmtNumber(creator.followers)} followers · {creator.engagementRate}% engagement
+                    {fmtNumber(creator?.followers ?? 0)} followers · {creator?.engagementRate ?? 0}% engagement
                   </span>
                 </>
               )}
@@ -146,7 +173,10 @@ export default function CreatorDashboard() {
                   <AlertTriangle className="w-3 h-3" /> Reconnect needed
                 </span>
               )}
-              {!yt && <span className="tag tag-amber"><Clock className="w-3 h-3" /> Unverified</span>}
+              {ytStatus?.isOutdated && (
+                <span className="tag tag-amber"><AlertTriangle className="w-3 h-3" /> Stats outdated</span>
+              )}
+              {!yt && <span className="tag tag-amber">Unverified</span>}
             </div>
             <Link to="/creator/accounts" className="btn btn-secondary btn-sm mt-4">
               {yt ? 'Manage connection' : 'Connect YouTube'}
@@ -155,21 +185,19 @@ export default function CreatorDashboard() {
           </article>
         </div>
 
-        {/* KPIs (real numbers from the data) */}
         <StatRow
           items={[
-            { label: 'Proposals sent', value: proposalsSent, hint: 'all time' },
-            { label: 'Acceptance rate', value: `${acceptanceRate}%`, hint: 'from sent' },
-            { label: 'Active', value: counts.pending + counts.shortlisted, hint: 'pending + shortlist' },
-            { label: 'Earned', value: accepted.length, hint: 'accepted' },
+            { label: 'Proposals sent', value: perf.proposalsSent, hint: 'all time' },
+            { label: 'Acceptance', value: perf.acceptanceRate !== null ? `${acceptancePct}%` : '—', hint: 'from sent' },
+            { label: 'In flight', value: counts.pending + counts.shortlisted, hint: 'pending + shortlist' },
+            { label: 'Accepted', value: perf.accepted, hint: 'hired' },
           ]}
         />
 
-        {/* Next actions — single most important list */}
         <section>
           <SectionHeader
-            eyebrow="Up next"
-            title="Three things to do this week"
+            eyebrow="Three to do"
+            title="Up next"
             description="The actions with the highest expected value based on your current state."
             action={
               <Link to="/creator/campaigns" className="btn btn-secondary btn-sm">
@@ -177,17 +205,14 @@ export default function CreatorDashboard() {
               </Link>
             }
           />
-          <ul className="mt-5 grid sm:grid-cols-2 lg:grid-cols-3 gap-3 stagger">
+          <ul className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 stagger">
             {[
-              { to: '/creator/campaigns', icon: <Compass className="w-4 h-4" />, title: 'Browse new briefs', hint: `${published.length} live`, accent: 'ember' as const },
+              { to: '/creator/campaigns', icon: <Compass className="w-4 h-4" />, title: 'Browse new briefs', hint: `${available.length} live`, accent: 'ember' as const },
               { to: '/creator/applications', icon: <ListChecks className="w-4 h-4" />, title: 'Check proposal status', hint: `${counts.pending} pending`, accent: 'amber' as const },
               { to: '/creator/accounts', icon: <Youtube className="w-4 h-4" />, title: 'Verify your stats', hint: yt ? 'Connected' : 'Not connected', accent: 'rose' as const },
             ].map((a) => (
               <li key={a.to}>
-                <Link
-                  to={a.to}
-                  className="card card-hover p-5 flex items-center gap-3 group h-full"
-                >
+                <Link to={a.to} className="card card-hover p-5 flex items-center gap-3 group h-full">
                   <span className={
                     a.accent === 'ember' ? 'w-10 h-10 rounded-md bg-ember-50 text-ember-700 flex items-center justify-center shrink-0'
                     : a.accent === 'amber' ? 'w-10 h-10 rounded-md bg-amber-50 text-amber-700 flex items-center justify-center shrink-0'
@@ -205,7 +230,6 @@ export default function CreatorDashboard() {
           </ul>
         </section>
 
-        {/* Latest campaigns */}
         <section>
           <SectionHeader
             eyebrow="Latest"
@@ -216,24 +240,21 @@ export default function CreatorDashboard() {
               </Link>
             }
           />
-          {latestPublished.length === 0 ? (
+          {available.length === 0 ? (
             <div className="card p-10 mt-5 text-center">
               <Megaphone className="w-8 h-8 text-ink-300 mx-auto mb-3" />
               <div className="text-sm font-semibold text-ink-900">No live briefs right now</div>
               <div className="text-xs text-ink-500 mt-1">Check back soon — the marketplace updates daily.</div>
             </div>
           ) : (
-            <ul className="mt-5 grid md:grid-cols-2 gap-3 stagger">
-              {latestPublished.map((c) => {
+            <ul className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3 stagger">
+              {available.slice(0, 4).map((c) => {
                 const eligible =
-                  c.requiredPlatform === creator.primaryPlatform &&
-                  (!c.minFollowers || creator.followers >= c.minFollowers);
+                  c.requiredPlatform === creator?.primaryPlatform &&
+                  (!c.minFollowers || (creator?.followers ?? 0) >= c.minFollowers);
                 return (
                   <li key={c.id}>
-                    <Link
-                      to={`/creator/campaigns/${c.id}`}
-                      className="card card-hover p-4 sm:p-5 group block"
-                    >
+                    <Link to={`/creator/campaigns/${c.id}`} className="card card-hover p-4 sm:p-5 group block">
                       <div className="flex items-start gap-3">
                         <ChannelArt name={c.brandName} seed={c.brandId} height={48} className="w-12 rounded-md shrink-0" />
                         <div className="min-w-0 flex-1">
@@ -243,7 +264,7 @@ export default function CreatorDashboard() {
                       </div>
                       <div className="mt-4 grid grid-cols-3 gap-px bg-ink-200 rounded-md overflow-hidden border border-ink-200">
                         <Cell label="Budget" value={currency(c.budgetPerCreator)} hint="/ creator" />
-                        <Cell label="Deadline" value={fmtDate(c.applicationDeadline)} />
+                        <Cell label="Deadline" value={fmtRelativeTime(c.applicationDeadline)} />
                         <Cell label="Need" value={`${c.creatorsNeeded}`} hint="creators" />
                       </div>
                       <div className="mt-4 flex items-center justify-between">
@@ -258,7 +279,44 @@ export default function CreatorDashboard() {
           )}
         </section>
 
-        {/* My applications */}
+        <section>
+          <SectionHeader
+            eyebrow="Accepted"
+            title="Active collaborations"
+            description="Each card is a collaboration you've been accepted for."
+            action={
+              <Link to="/creator/applications" className="text-sm link-accent inline-flex items-center gap-1">
+                All applications <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            }
+          />
+          {accepted.length === 0 ? (
+            <div className="card p-10 mt-5 text-center">
+              <ListChecks className="w-8 h-8 text-ink-300 mx-auto mb-3" />
+              <div className="text-sm font-semibold text-ink-900">No active collaborations</div>
+              <div className="text-xs text-ink-500 mt-1">When a brand accepts you, it'll show up here.</div>
+            </div>
+          ) : (
+            <ul className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 stagger">
+              {accepted.slice(0, 4).map((p) => (
+                <li key={p.id}>
+                  <Link to={`/creator/applications/${p.id}`} className="card card-hover p-4 sm:p-5 group block h-full">
+                    <div className="flex items-start gap-3">
+                      <ChannelArt name={p.brandName} seed={p.brandId} height={48} className="w-12 rounded-md shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs text-ink-500 truncate">{p.brandName}</div>
+                        <div className="font-semibold text-ink-900 line-clamp-2 leading-snug">{p.campaignTitle}</div>
+                        <div className="mt-2 text-xs text-ink-500">Proposed {currency(p.proposedRate)}</div>
+                      </div>
+                      <ProposalStatusBadge status={p.status} />
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
         <section>
           <SectionHeader
             eyebrow="Applications"
@@ -280,7 +338,31 @@ export default function CreatorDashboard() {
             </div>
           ) : (
             <div className="card mt-5 overflow-hidden">
-              <div className="overflow-x-auto">
+              {/* Mobile card view */}
+              <div className="sm:hidden divide-y divide-ink-200/60">
+                {myProposals.slice(0, 6).map((p) => (
+                  <Link
+                    key={p.id}
+                    to={`/creator/applications/${p.id}`}
+                    className="p-4 block hover:bg-paper-100/60 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-ink-900 line-clamp-1">{p.campaignTitle}</div>
+                        <div className="text-xs text-ink-500 mt-0.5">{p.brandName}</div>
+                      </div>
+                      <ProposalStatusBadge status={p.status} />
+                    </div>
+                    <div className="mt-2.5 flex items-center justify-between text-xs">
+                      <span className="text-ink-500">{fmtRelativeTime(p.submittedAt)}</span>
+                      <span className="font-mono font-semibold text-ink-900">{currency(p.proposedRate)}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+
+              {/* Tablet/desktop table */}
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="table-quiet min-w-[600px]">
                   <thead>
                     <tr>
@@ -291,31 +373,22 @@ export default function CreatorDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {myProposals.slice(0, 6).map((p) => {
-                      const c = campaigns.find((x) => x.id === p.campaignId);
-                      return (
-                        <tr key={p.id}>
-                          <td>
-                            <Link
-                              to={`/creator/applications/${p.id}`}
-                              className="font-semibold text-ink-900 hover:text-ember-600 transition-colors line-clamp-1"
-                            >
-                              {c?.title ?? 'Campaign'}
-                            </Link>
-                            <div className="text-xs text-ink-500">{c?.brandName}</div>
-                          </td>
-                          <td className="text-ink-500 whitespace-nowrap">
-                            {fmtRelativeTime(p.submittedAt)}
-                          </td>
-                          <td className="text-ink-700 font-mono whitespace-nowrap">
-                            {currency(p.proposedRate)}
-                          </td>
-                          <td className="text-right">
-                            <ProposalStatusBadge status={p.status} />
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {myProposals.slice(0, 6).map((p) => (
+                      <tr key={p.id}>
+                        <td>
+                          <Link
+                            to={`/creator/applications/${p.id}`}
+                            className="font-semibold text-ink-900 hover:text-ember-600 transition-colors line-clamp-1"
+                          >
+                            {p.campaignTitle}
+                          </Link>
+                          <div className="text-xs text-ink-500">{p.brandName}</div>
+                        </td>
+                        <td className="text-ink-500 whitespace-nowrap">{fmtRelativeTime(p.submittedAt)}</td>
+                        <td className="text-ink-700 font-mono whitespace-nowrap">{currency(p.proposedRate)}</td>
+                        <td className="text-right"><ProposalStatusBadge status={p.status} /></td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -329,9 +402,12 @@ export default function CreatorDashboard() {
 
 function Cell({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="bg-paper-50 py-2.5 px-3 text-center">
-      <div className="eyebrow !text-[9px]">{label}</div>
-      <div className="num-display text-sm mt-0.5">{value}{hint && <span className="text-[10px] text-ink-500 font-sans font-normal ml-1">{hint}</span>}</div>
+    <div className="bg-paper-50 py-2 px-1.5 sm:px-3 text-center min-w-0 overflow-hidden">
+      <div className="eyebrow !text-[9px] truncate">{label}</div>
+      <div className="num-display text-xs sm:text-sm mt-0.5 truncate">
+        {value}
+        {hint && <span className="text-[10px] text-ink-500 font-sans font-normal ml-0.5 sm:ml-1 hidden sm:inline">{hint}</span>}
+      </div>
     </div>
   );
 }

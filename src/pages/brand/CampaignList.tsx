@@ -1,29 +1,67 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import clsx from 'clsx';
-import { Plus, ArrowRight, Megaphone, Edit, Trash2, Users, ExternalLink } from 'lucide-react';
-import { useStore, setCampaignStatus, deleteCampaign } from '../../state/Store';
+import { Plus, ArrowRight, Megaphone, Edit, Trash2, Users } from 'lucide-react';
 import {
-  CampaignStatusBadge, ChannelArt, EmptyState, Button, PageHeader, SectionHeader,
+  CampaignStatusBadge, ChannelArt, EmptyState, Button, PageHeader,
 } from '../../components/ui';
 import { fmtDate, currency } from '../../data/seed';
 import { ConfirmDialog } from '../../components/Modal';
 import { useToast } from '../../state/ToastContext';
+import {
+  useStore, loadBrandCampaigns, loadBrandProfile, setCampaignStatus, deleteCampaign,
+  loadMyProposals,
+} from '../../state/Store';
+import { listBrandCampaignProposals } from '../../api/endpoints';
+import { isApiError } from '../../api/client';
+import type { CampaignStatus as CS } from '../../types';
 
 const TABS = ['All', 'Published', 'Draft', 'Closed'] as const;
 
 export default function CampaignList() {
-  const { campaigns, proposals, brand } = useStore();
+  const { campaigns, brand, loading, errors } = useStore();
   const navigate = useNavigate();
   const { push } = useToast();
   const [tab, setTab] = useState<(typeof TABS)[number]>('All');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [proposalCounts, setProposalCounts] = useState<Record<string, { total: number; accepted: number }>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        await loadBrandProfile();
+        const list = await loadBrandCampaigns();
+        // Pull proposal counts for the visible cards.
+        const counts: Record<string, { total: number; accepted: number }> = {};
+        await Promise.all(
+          list.slice(0, 20).map(async (c) => {
+            try {
+              const { results } = await listBrandCampaignProposals(c.id);
+              counts[c.id] = {
+                total: results.length,
+                accepted: results.filter((p) => p.status === 'accepted').length,
+              };
+            } catch {
+              counts[c.id] = { total: 0, accepted: 0 };
+            }
+          }),
+        );
+        if (!cancelled) setProposalCounts(counts);
+      } catch (err) {
+        if (!cancelled) push(isApiError(err) ? err.message : 'Failed to load campaigns.', 'error');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const mine = useMemo(
-    () => campaigns
-      .filter((c) => c.brandId === brand.id)
-      .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
-    [campaigns, brand.id]
+    // Backend already filters the brand's own campaigns, so the list
+    // doesn't need a brand.id check.
+    () => [...campaigns].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
+    [campaigns],
   );
 
   const counts = {
@@ -67,7 +105,11 @@ export default function CampaignList() {
         </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {loading.brandCampaigns ? (
+        <div className="card p-10 text-center text-sm text-ink-500">Loading campaigns…</div>
+      ) : errors.brandCampaigns ? (
+        <div className="card p-10 text-center text-sm text-rose-700">{errors.brandCampaigns}</div>
+      ) : filtered.length === 0 ? (
         <div className="card">
           <EmptyState
             icon={<Megaphone className="w-5 h-5" />}
@@ -83,8 +125,7 @@ export default function CampaignList() {
       ) : (
         <ul className="space-y-3 stagger">
           {filtered.map((c) => {
-            const totalProposals = proposals.filter((p) => p.campaignId === c.id).length;
-            const accepted = proposals.filter((p) => p.campaignId === c.id && p.status === 'accepted').length;
+            const pc = proposalCounts[c.id] ?? { total: 0, accepted: 0 };
             return (
               <li key={c.id}>
                 <article className="card card-hover p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4">
@@ -108,19 +149,23 @@ export default function CampaignList() {
                   <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-0.5 shrink-0">
                     <div className="text-sm font-mono font-semibold text-ink-900 inline-flex items-center gap-1">
                       <Users className="w-3.5 h-3.5 text-ink-500" />
-                      {accepted} / {c.creatorsNeeded}
+                      {pc.accepted} / {c.creatorsNeeded}
                     </div>
                     <div className="text-[11px] text-ink-500">
-                      {totalProposals} proposal{totalProposals === 1 ? '' : 's'}
+                      {pc.total} proposal{pc.total === 1 ? '' : 's'}
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 shrink-0">
                     {c.status === 'draft' && (
                       <Button
                         size="sm"
-                        onClick={() => {
-                          setCampaignStatus(c.id, 'published');
-                          push('Campaign published', 'success');
+                        onClick={async () => {
+                          try {
+                            await setCampaignStatus(c.id, 'published');
+                            push('Campaign published', 'success');
+                          } catch (err) {
+                            push(isApiError(err) ? err.message : 'Failed to publish.', 'error');
+                          }
                         }}
                       >
                         Publish
@@ -130,9 +175,13 @@ export default function CampaignList() {
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => {
-                          setCampaignStatus(c.id, 'closed');
-                          push('Campaign closed', 'info');
+                        onClick={async () => {
+                          try {
+                            await setCampaignStatus(c.id, 'closed');
+                            push('Campaign closed', 'info');
+                          } catch (err) {
+                            push(isApiError(err) ? err.message : 'Failed to close.', 'error');
+                          }
                         }}
                       >
                         Close
@@ -142,9 +191,13 @@ export default function CampaignList() {
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => {
-                          setCampaignStatus(c.id, 'published');
-                          push('Campaign reopened', 'info');
+                        onClick={async () => {
+                          try {
+                            await setCampaignStatus(c.id, 'published');
+                            push('Campaign reopened', 'info');
+                          } catch (err) {
+                            push(isApiError(err) ? err.message : 'Failed to reopen.', 'error');
+                          }
                         }}
                       >
                         Reopen
@@ -158,14 +211,16 @@ export default function CampaignList() {
                         <Edit className="w-3.5 h-3.5" />
                       </Button>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setConfirmDelete(c.id)}
-                      aria-label="Delete campaign"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                    </Button>
+                    {c.status === 'draft' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setConfirmDelete(c.id)}
+                        aria-label="Delete campaign"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                      </Button>
+                    )}
                   </div>
                 </article>
               </li>
@@ -177,10 +232,14 @@ export default function CampaignList() {
       <ConfirmDialog
         open={!!confirmDelete}
         onClose={() => setConfirmDelete(null)}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (confirmDelete) {
-            deleteCampaign(confirmDelete);
-            push('Campaign deleted', 'info');
+            try {
+              await deleteCampaign(confirmDelete);
+              push('Campaign deleted', 'info');
+            } catch (err) {
+              push(isApiError(err) ? err.message : 'Failed to delete.', 'error');
+            }
           }
         }}
         title="Delete this campaign?"

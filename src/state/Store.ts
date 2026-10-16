@@ -1,250 +1,471 @@
-import { useEffect, useState, useCallback } from 'react';
-import {
-  seedBrand,
-  seedCampaigns,
-  seedConnectedYouTube,
-  seedCreator,
-  seedNotifications,
-  seedProposals,
-  discoverableCreators,
-} from '../data/seed';
+/**
+ * In-memory data store backed by the Microwork API.
+ *
+ * The page-level components import the same names they used to (useStore,
+ * updateCreator, searchCreators, addCampaign, …) so the rest of the app does
+ * not need to know how the data is fetched. Mutators are async and return a
+ * Promise; pages that need to wait should `await` and then call `refresh()`.
+ *
+ * State is held in module scope. Listeners (one per subscriber) get notified
+ * after a refresh or a successful mutation, so screens re-render.
+ */
+
+import { useEffect, useState } from 'react';
+import * as api from '../api/endpoints';
 import type {
   AppNotification,
+  BrandProfile,
   Campaign,
   CampaignStatus,
   ConnectedAccount,
   CreatorProfile,
-  BrandProfile,
+  MyProposal,
+  Niche,
+  Platform,
   PortfolioLink,
   Proposal,
   ProposalStatus,
 } from '../types';
+import { isApiError } from '../api/client';
 
 type Store = {
-  creator: CreatorProfile;
-  brand: BrandProfile;
+  creator: CreatorProfile | null;
+  brand: BrandProfile | null;
   campaigns: Campaign[];
-  proposals: Proposal[];
+  /** Mixed list: brand-facing proposals (creator info embedded) or
+   *  creator-facing "my applications" (campaign/brand info embedded). */
+  proposals: Array<Proposal | MyProposal>;
   notifications: AppNotification[];
   connectedAccounts: ConnectedAccount[];
+  loading: Record<string, boolean>;
+  errors: Record<string, string | null>;
 };
 
-const STORAGE_KEY = 'microinf_store_v1';
-
-const initial: Store = {
-  creator: seedCreator,
-  brand: seedBrand,
-  campaigns: seedCampaigns,
-  proposals: seedProposals,
-  notifications: seedNotifications,
-  connectedAccounts: [seedConnectedYouTube],
+const empty: Store = {
+  creator: null,
+  brand: null,
+  campaigns: [],
+  proposals: [],
+  notifications: [],
+  connectedAccounts: [],
+  loading: {},
+  errors: {},
 };
 
-let listeners: Array<() => void> = [];
-let state: Store = (() => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as Store;
-  } catch {}
-  return initial;
-})();
+let state: Store = { ...empty };
+const listeners = new Set<() => void>();
+const pendingFetches = new Map<string, Promise<unknown>>();
 
-const persist = () => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {}
-};
-
-const setState = (next: Store) => {
-  state = next;
-  persist();
+const setState = (patch: Partial<Store>) => {
+  state = { ...state, ...patch };
   listeners.forEach((l) => l());
 };
 
-export const resetStore = () => {
-  state = initial;
-  persist();
-  listeners.forEach((l) => l());
+const setLoading = (key: string, value: boolean) => {
+  setState({ loading: { ...state.loading, [key]: value } });
 };
+
+const setError = (key: string, value: string | null) => {
+  setState({ errors: { ...state.errors, [key]: value } });
+};
+
+const runOnce = <T,>(key: string, fn: () => Promise<T>): Promise<T> => {
+  const existing = pendingFetches.get(key);
+  if (existing) return existing as Promise<T>;
+  const p = fn().finally(() => pendingFetches.delete(key));
+  pendingFetches.set(key, p);
+  return p;
+};
+
+// --- Hook -------------------------------------------------------------------
 
 export const useStore = () => {
   const [, force] = useState(0);
   useEffect(() => {
     const l = () => force((n) => n + 1);
-    listeners.push(l);
+    listeners.add(l);
     return () => {
-      listeners = listeners.filter((x) => x !== l);
+      listeners.delete(l);
     };
   }, []);
   return state;
 };
 
-// --- Creators ---
-export const updateCreator = (patch: Partial<CreatorProfile>) => {
-  setState({ ...state, creator: { ...state.creator, ...patch } });
-};
+// --- Creator / brand loaders ----------------------------------------------
 
-export const setCreatorPortfolio = (links: PortfolioLink[]) => {
-  setState({ ...state, creator: { ...state.creator, portfolio: links } });
-};
-
-export const searchCreators = (query: {
-  keyword?: string;
-  niche?: string;
-  platform?: string;
-  location?: string;
-  minFollowers?: number;
-  maxFollowers?: number;
-  minEngagement?: number;
-}): CreatorProfile[] => {
-  return discoverableCreators.filter((c) => {
-    if (query.keyword) {
-      const k = query.keyword.toLowerCase();
-      const hay = `${c.fullName} ${c.bio} ${c.niche} ${c.location}`.toLowerCase();
-      if (!hay.includes(k)) return false;
+export const loadCreatorProfile = () =>
+  runOnce('creatorMe', async () => {
+    setLoading('creatorMe', true);
+    setError('creatorMe', null);
+    try {
+      const [me, portfolio, yt] = await Promise.all([
+        api.fetchCreatorMe(),
+        api.fetchPortfolio().catch(() => [] as PortfolioLink[]),
+        api.fetchYouTubeStatus().catch(() => null),
+      ]);
+      const merged: CreatorProfile = { ...me, portfolio };
+      if (yt && yt.connected) {
+        const acc: ConnectedAccount = {
+          id: 'yt',
+          platform: 'YouTube',
+          handle: 'YouTube channel',
+          verified: !yt.needsReconnect,
+          lastSyncedAt: yt.lastSyncedAt ?? new Date().toISOString(),
+          status: yt.needsReconnect ? 'expired' : 'connected',
+        };
+        merged.connectedAccount = acc;
+        setState({ connectedAccounts: [acc] });
+      } else {
+        setState({ connectedAccounts: [] });
+      }
+      setState({ creator: merged });
+      return merged;
+    } catch (err) {
+      const msg = isApiError(err) ? err.message : 'Failed to load profile.';
+      setError('creatorMe', msg);
+      throw err;
+    } finally {
+      setLoading('creatorMe', false);
     }
-    if (query.niche && c.niche !== query.niche) return false;
-    if (query.platform && c.primaryPlatform !== query.platform) return false;
-    if (query.location && !c.location.toLowerCase().includes(query.location.toLowerCase()))
-      return false;
-    if (query.minFollowers && c.followers < query.minFollowers) return false;
-    if (query.maxFollowers && c.followers > query.maxFollowers) return false;
-    if (query.minEngagement && c.engagementRate < query.minEngagement) return false;
-    return true;
   });
+
+export const loadBrandProfile = () =>
+  runOnce('brandMe', async () => {
+    setLoading('brandMe', true);
+    setError('brandMe', null);
+    try {
+      const brand = await api.fetchBrandMe();
+      setState({ brand });
+      return brand;
+    } catch (err) {
+      const msg = isApiError(err) ? err.message : 'Failed to load profile.';
+      setError('brandMe', msg);
+      throw err;
+    } finally {
+      setLoading('brandMe', false);
+    }
+  });
+
+// --- Mutators (async) ------------------------------------------------------
+
+export const updateCreator = async (
+  patch: Partial<{
+    fullName: string;
+    bio: string;
+    niche: Niche;
+    primaryPlatform: Platform;
+    location: string;
+    ratePerPost: number;
+    ratePerStory: number;
+    ratePerVideo: number;
+  }>,
+): Promise<CreatorProfile | null> => {
+  const cityCountry = patch.location?.split(',').map((s) => s.trim()) ?? [];
+  const updated = await api.updateCreatorMe({
+    fullName: patch.fullName,
+    bio: patch.bio,
+    niche: patch.niche,
+    primaryPlatform: patch.primaryPlatform,
+    city: cityCountry[0],
+    country: cityCountry[1],
+    ratePerPost: patch.ratePerPost,
+    ratePerStory: patch.ratePerStory,
+    ratePerVideo: patch.ratePerVideo,
+  });
+  const merged: CreatorProfile = { ...updated, portfolio: state.creator?.portfolio ?? [] };
+  setState({ creator: merged });
+  return merged;
 };
 
-// --- Brand ---
-export const updateBrand = (patch: Partial<BrandProfile>) => {
-  setState({ ...state, brand: { ...state.brand, ...patch } });
+export const setCreatorPortfolio = async (links: PortfolioLink[]): Promise<void> => {
+  if (!state.creator) return;
+  const existing = state.creator.portfolio;
+  const incomingIds = new Set(links.map((l) => l.id));
+  const toDelete = existing.filter((l) => !incomingIds.has(l.id) && /^\d+$/.test(l.id));
+  for (const item of toDelete) {
+    await api.deletePortfolioItem(item.id).catch(() => undefined);
+  }
+  // Add new ones (those whose id isn't a numeric backend id).
+  const existingIds = new Set(existing.map((l) => l.id));
+  const newItems = links.filter((l) => !existingIds.has(l.id) || !/^\d+$/.test(l.id));
+  for (const item of newItems) {
+    if (!item.url) continue;
+    await api.addPortfolioItem({ url: item.url, caption: item.title });
+  }
+  const fresh = await api.fetchPortfolio();
+  if (state.creator) setState({ creator: { ...state.creator, portfolio: fresh } });
 };
 
-// --- Campaigns ---
-export const addCampaign = (c: Omit<Campaign, 'id' | 'createdAt' | 'status'>): Campaign => {
-  const created: Campaign = {
-    ...c,
-    id: 'camp_' + Math.random().toString(36).slice(2, 8),
-    createdAt: new Date().toISOString(),
-    status: 'draft',
-  };
-  setState({ ...state, campaigns: [created, ...state.campaigns] });
+export const updateBrand = async (
+  patch: Partial<{ companyName: string; industry: string; website: string; about: string }>,
+): Promise<BrandProfile | null> => {
+  const updated = await api.updateBrandMe(patch);
+  setState({ brand: updated });
+  return updated;
+};
+
+// --- Campaigns -------------------------------------------------------------
+
+export const addCampaign = async (c: {
+  title: string;
+  description: string;
+  category: Niche;
+  requiredPlatform: Platform;
+  budgetPerCreator: number;
+  applicationDeadline: string;
+  deliverables: string;
+  creatorsNeeded: number;
+  minFollowers?: number;
+}): Promise<Campaign> => {
+  const created = await api.createCampaign({
+    title: c.title,
+    description: c.description,
+    niche: c.category,
+    platform: c.requiredPlatform,
+    budget: c.budgetPerCreator,
+    deadline: c.applicationDeadline,
+    deliverables: c.deliverables,
+    creatorsNeeded: c.creatorsNeeded,
+    minFollowers: c.minFollowers,
+  });
+  setState({ campaigns: [created, ...state.campaigns] });
   return created;
 };
 
-export const updateCampaign = (id: string, patch: Partial<Campaign>) => {
-  setState({
-    ...state,
-    campaigns: state.campaigns.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+export const updateCampaign = async (
+  id: string,
+  patch: Partial<{
+    title: string;
+    description: string;
+    category: Niche;
+    requiredPlatform: Platform;
+    budgetPerCreator: number;
+    applicationDeadline: string;
+    deliverables: string;
+    creatorsNeeded: number;
+    minFollowers?: number;
+  }>,
+): Promise<Campaign | null> => {
+  const idNum = Number(id);
+  const updated = await api.updateCampaign(idNum, {
+    title: patch.title,
+    description: patch.description,
+    niche: patch.category,
+    platform: patch.requiredPlatform,
+    budget: patch.budgetPerCreator,
+    deadline: patch.applicationDeadline,
+    deliverables: patch.deliverables,
+    creatorsNeeded: patch.creatorsNeeded,
+    minFollowers: patch.minFollowers,
   });
+  setState({ campaigns: state.campaigns.map((c) => (c.id === id ? updated : c)) });
+  return updated;
 };
 
-export const setCampaignStatus = (id: string, status: CampaignStatus) => {
-  updateCampaign(id, { status });
+export const setCampaignStatus = async (id: string, status: CampaignStatus): Promise<void> => {
+  const idNum = Number(id);
+  let updated: Campaign;
+  if (status === 'published') updated = await api.publishCampaign(idNum);
+  else if (status === 'closed') updated = await api.closeCampaign(idNum);
+  else throw new Error('Unsupported transition: ' + status);
+  setState({ campaigns: state.campaigns.map((c) => (c.id === id ? updated : c)) });
 };
 
-export const deleteCampaign = (id: string) => {
-  setState({ ...state, campaigns: state.campaigns.filter((c) => c.id !== id) });
+export const deleteCampaign = async (id: string): Promise<void> => {
+  await api.deleteCampaign(Number(id));
+  setState({ campaigns: state.campaigns.filter((c) => c.id !== id) });
 };
 
-// --- Proposals ---
-export const addProposal = (
+// --- Brand discovery (creator search) --------------------------------------
+
+export const searchCreators = async (query: api.SearchCreatorsParams): Promise<CreatorProfile[]> => {
+  return api.searchCreators(query);
+};
+
+// --- Proposals -------------------------------------------------------------
+
+export const addProposal = async (
   campaignId: string,
-  data: Omit<Proposal, 'id' | 'submittedAt' | 'status' | 'campaignId' | 'creatorId' | 'creatorName' | 'creatorNiche' | 'creatorPlatform' | 'creatorFollowers' | 'creatorEngagement'>
-): Proposal => {
-  const creator = state.creator;
-  const created: Proposal = {
-    ...data,
-    id: 'prop_' + Math.random().toString(36).slice(2, 8),
+  data: {
+    coverMessage: string;
+    proposedRate: number;
+    portfolio: PortfolioLink[];
+    relevantExperience: string;
+  },
+): Promise<MyProposal> => {
+  await api.submitProposal({
     campaignId,
-    creatorId: creator.id,
-    creatorName: creator.fullName,
-    creatorNiche: creator.niche,
-    creatorPlatform: creator.primaryPlatform,
-    creatorFollowers: creator.followers,
-    creatorEngagement: creator.engagementRate,
-    status: 'pending',
-    submittedAt: new Date().toISOString(),
-  };
-  setState({ ...state, proposals: [created, ...state.proposals] });
-  return created;
-};
-
-export const updateProposalStatus = (id: string, status: ProposalStatus, withdrawReason?: string) => {
-  setState({
-    ...state,
-    proposals: state.proposals.map((p) =>
-      p.id === id ? { ...p, status, withdrawReason: withdrawReason ?? p.withdrawReason } : p
-    ),
+    coverMessage: data.coverMessage,
+    proposedRate: data.proposedRate,
+    portfolioLinks: data.portfolio,
+    experienceNote: data.relevantExperience,
   });
+  // Refresh the full list so we get the joined campaign metadata.
+  const list = await loadMyProposals();
+  const found = list.find((p) => p.campaignId === campaignId);
+  return found ?? ({} as MyProposal);
 };
 
-// --- Connected accounts ---
-export const updateConnectedAccount = (id: string, patch: Partial<ConnectedAccount>) => {
-  setState({
-    ...state,
-    connectedAccounts: state.connectedAccounts.map((a) => (a.id === id ? { ...a, ...patch } : a)),
-  });
+export const updateProposalStatus = async (
+  id: string,
+  status: ProposalStatus,
+  withdrawReason?: string,
+): Promise<void> => {
+  if (status === 'withdrawn') {
+    await api.withdrawProposal(Number(id), withdrawReason);
+    await loadMyProposals();
+    return;
+  }
+  if (status === 'shortlisted') await api.shortlistProposal(Number(id));
+  else if (status === 'accepted') await api.acceptProposal(Number(id));
+  else if (status === 'rejected') await api.rejectProposal(Number(id));
+  else throw new Error('Unsupported proposal status: ' + status);
 };
 
-export const connectYouTube = () => {
-  const existing = state.connectedAccounts.find((a) => a.platform === 'YouTube');
-  if (existing) {
-    updateConnectedAccount(existing.id, {
-      status: 'connected',
-      verified: true,
-      lastSyncedAt: new Date().toISOString(),
-    });
-  } else {
-    const acc: ConnectedAccount = {
-      id: 'acc_yt_' + Math.random().toString(36).slice(2, 8),
-      platform: 'YouTube',
-      handle: 'Avery Makes',
-      verified: true,
-      lastSyncedAt: new Date().toISOString(),
-      status: 'connected',
-    };
-    setState({ ...state, connectedAccounts: [...state.connectedAccounts, acc] });
+// --- Lists -----------------------------------------------------------------
+
+export const loadMyProposals = async (): Promise<MyProposal[]> => {
+  setLoading('myProposals', true);
+  setError('myProposals', null);
+  try {
+    const list = await api.listMyProposals();
+    setState({ proposals: list });
+    return list;
+  } catch (err) {
+    const msg = isApiError(err) ? err.message : 'Failed to load proposals.';
+    setError('myProposals', msg);
+    return [];
+  } finally {
+    setLoading('myProposals', false);
   }
 };
 
-export const disconnectYouTube = () => {
+export const loadCreatorCampaigns = async (filters: {
+  q?: string;
+  niche?: Niche;
+  platform?: Platform;
+  minBudget?: number;
+  deadlineBefore?: string;
+} = {}): Promise<Campaign[]> => {
+  setLoading('creatorCampaigns', true);
+  setError('creatorCampaigns', null);
+  try {
+    const list = await api.listCreatorCampaigns(filters);
+    setState({ campaigns: list });
+    return list;
+  } catch (err) {
+    const msg = isApiError(err) ? err.message : 'Failed to load campaigns.';
+    setError('creatorCampaigns', msg);
+    return [];
+  } finally {
+    setLoading('creatorCampaigns', false);
+  }
+};
+
+export const loadBrandCampaigns = async (filter?: { status?: CampaignStatus }): Promise<Campaign[]> => {
+  setLoading('brandCampaigns', true);
+  setError('brandCampaigns', null);
+  try {
+    const list = await api.listBrandCampaigns(filter);
+    setState({ campaigns: list });
+    return list;
+  } catch (err) {
+    const msg = isApiError(err) ? err.message : 'Failed to load campaigns.';
+    setError('brandCampaigns', msg);
+    return [];
+  } finally {
+    setLoading('brandCampaigns', false);
+  }
+};
+
+export const setBrandProposals = (proposals: Proposal[]) => {
+  setState({ proposals: proposals as Array<Proposal | MyProposal> });
+};
+
+export const setCampaigns = (campaigns: Campaign[]) => setState({ campaigns });
+
+// --- Notifications ---------------------------------------------------------
+
+export const markNotificationRead = async (id: string): Promise<void> => {
+  const updated = await api.markNotificationRead(Number(id));
   setState({
-    ...state,
-    connectedAccounts: state.connectedAccounts.filter((a) => a.platform !== 'YouTube'),
+    notifications: state.notifications.map((n) => (n.id === id ? updated : n)),
   });
 };
 
-// --- Notifications ---
-export const markNotificationRead = (id: string) => {
+export const markAllNotificationsRead = async (): Promise<void> => {
+  await api.markAllNotificationsRead();
   setState({
-    ...state,
-    notifications: state.notifications.map((n) =>
-      n.id === id ? { ...n, read: true } : n
-    ),
-  });
-};
-
-export const markAllNotificationsRead = () => {
-  setState({
-    ...state,
     notifications: state.notifications.map((n) => ({ ...n, read: true })),
   });
 };
 
-export const pushNotification = (
-  n: Omit<AppNotification, 'id' | 'createdAt' | 'read'>
-) => {
-  const note: AppNotification = {
-    ...n,
-    id: 'n_' + Math.random().toString(36).slice(2, 8),
-    createdAt: new Date().toISOString(),
-    read: false,
-  };
-  setState({ ...state, notifications: [note, ...state.notifications] });
+export const loadNotifications = async (): Promise<AppNotification[]> => {
+  setLoading('notifications', true);
+  setError('notifications', null);
+  try {
+    const { results } = await api.listNotifications();
+    setState({ notifications: results });
+    return results;
+  } catch (err) {
+    const msg = isApiError(err) ? err.message : 'Failed to load notifications.';
+    setError('notifications', msg);
+    return [];
+  } finally {
+    setLoading('notifications', false);
+  }
 };
 
-// --- Helpers ---
-export const profileCompletion = (c: CreatorProfile): number => {
+export const pushNotification = (_n: Omit<AppNotification, 'id' | 'createdAt' | 'read'>) => {
+  // Local-only helper kept for UI. Real notifications arrive via the API.
+};
+
+// --- YouTube connection ----------------------------------------------------
+
+export const connectYouTube = async (): Promise<void> => {
+  const url = await api.startYouTubeConnect();
+  window.location.assign(url);
+};
+
+export const disconnectYouTube = async (): Promise<void> => {
+  await api.disconnectYouTube();
+  setState({ connectedAccounts: [] });
+  if (state.creator) {
+    setState({ creator: { ...state.creator, connectedAccount: undefined, verified: false } });
+  }
+};
+
+export const updateConnectedAccount = async (
+  _id: string,
+  _patch: Partial<ConnectedAccount>,
+): Promise<void> => {
+  // "Refresh" maps to the backend's POST /social/youtube/refresh/.
+  await api.refreshYouTube().catch(() => undefined);
+  // Pull the latest status afterwards.
+  try {
+    const yt = await api.fetchYouTubeStatus();
+    if (yt.connected) {
+      const acc: ConnectedAccount = {
+        id: 'yt',
+        platform: 'YouTube',
+        handle: 'YouTube channel',
+        verified: !yt.needsReconnect,
+        lastSyncedAt: yt.lastSyncedAt ?? new Date().toISOString(),
+        status: yt.needsReconnect ? 'expired' : 'connected',
+      };
+      setState({ connectedAccounts: [acc] });
+    } else {
+      setState({ connectedAccounts: [] });
+    }
+  } catch {
+    /* ignore */
+  }
+};
+
+// --- Helpers ---------------------------------------------------------------
+
+export const profileCompletion = (c: CreatorProfile | null): number => {
+  if (!c) return 0;
   const fields: Array<keyof CreatorProfile> = [
     'fullName',
     'bio',
@@ -260,6 +481,8 @@ export const profileCompletion = (c: CreatorProfile): number => {
   const filled = fields.filter((f) => {
     const v = c[f] as unknown;
     if (typeof v === 'number') return v > 0;
+    if (typeof v === 'string') return v.trim().length > 0;
+    if (Array.isArray(v)) return v.length > 0;
     return Boolean(v);
   }).length;
   return Math.round((filled / fields.length) * 100);
@@ -267,35 +490,14 @@ export const profileCompletion = (c: CreatorProfile): number => {
 
 export const activeProposalsForCreator = () =>
   state.proposals.filter(
-    (p) => p.creatorId === state.creator.id && (p.status === 'pending' || p.status === 'shortlisted' || p.status === 'accepted')
+    (p) =>
+      p.creatorId === state.creator?.id &&
+      (p.status === 'pending' || p.status === 'shortlisted' || p.status === 'accepted'),
   );
 
-export const useSimulatedLoading = (ms = 350) => {
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), ms);
-    return () => clearTimeout(t);
-  }, [ms]);
-  return [loading, setLoading] as const;
-};
+// --- Test helpers (kept for parity, but no longer reset the store) ---------
 
-export const useLocalState = <T,>(key: string, initial: T) => {
-  const [value, setValue] = useState<T>(() => {
-    try {
-      const raw = localStorage.getItem('microinf_local_' + key);
-      return raw ? (JSON.parse(raw) as T) : initial;
-    } catch {
-      return initial;
-    }
-  });
-  const set = useCallback(
-    (v: T) => {
-      setValue(v);
-      try {
-        localStorage.setItem('microinf_local_' + key, JSON.stringify(v));
-      } catch {}
-    },
-    [key]
-  );
-  return [value, set] as const;
+export const resetStore = () => {
+  state = { ...empty };
+  listeners.forEach((l) => l());
 };
