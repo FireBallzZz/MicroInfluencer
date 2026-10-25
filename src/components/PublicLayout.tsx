@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, ArrowUpRight, Sparkles, LayoutDashboard, ArrowRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Logo } from './Logo';
@@ -14,6 +14,7 @@ const PUBLIC_NAV = [
 
 export default function PublicLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -21,6 +22,11 @@ export default function PublicLayout() {
   const dashboardLink = user
     ? user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard'
     : null;
+
+  useEffect(() => {
+    setMenuOpen(false);
+    document.body.style.overflow = '';
+  }, [location.pathname]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -38,16 +44,18 @@ export default function PublicLayout() {
   }, []);
 
   useEffect(() => {
+    if (!menuOpen) {
+      document.body.style.overflow = '';
+      return;
+    }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMenuOpen(false);
     };
-    if (menuOpen) {
-      window.addEventListener('keydown', onKey);
-      document.body.style.overflow = 'hidden';
-    }
+    window.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener('keydown', onKey);
-      if (menuOpen) document.body.style.overflow = '';
+      document.body.style.overflow = '';
     };
   }, [menuOpen]);
 

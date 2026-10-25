@@ -76,10 +76,14 @@ export default function AppShell() {
   useEffect(() => {
     setSidebarOpen(false);
     setCmdkOpen(false);
+    document.body.style.overflow = '';
   }, [location.pathname]);
 
   useEffect(() => {
-    if (!sidebarOpen && !cmdkOpen) return;
+    if (!sidebarOpen && !cmdkOpen) {
+      document.body.style.overflow = '';
+      return;
+    }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setSidebarOpen(false);
@@ -90,7 +94,7 @@ export default function AppShell() {
     document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener('keydown', onKey);
-      if (!sidebarOpen && !cmdkOpen) document.body.style.overflow = '';
+      document.body.style.overflow = '';
     };
   }, [sidebarOpen, cmdkOpen]);
 
@@ -121,6 +125,8 @@ export default function AppShell() {
     ? { to: '/brand/campaigns/create', label: 'New campaign', icon: Plus }
     : { to: '/creator/campaigns', label: 'Find work', icon: Compass };
 
+
+
   return (
     <div className="min-h-screen bg-paper-100 flex flex-col">
       <a
@@ -131,16 +137,16 @@ export default function AppShell() {
       </a>
 
       <header className="sticky top-0 z-30 bg-paper-50/95 backdrop-blur-md border-b border-ink-200">
-        <div className="container-page h-16 flex items-center gap-3 sm:gap-6">
+        <div className="container-page h-14 sm:h-16 flex items-center gap-1.5 sm:gap-3 lg:gap-6">
           <button
-            className="lg:hidden -ml-1 inline-flex items-center justify-center w-10 h-10 text-ink-700 rounded-md hover:bg-ink-100/60"
+            className="lg:hidden -ml-1 inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 text-ink-700 rounded-md hover:bg-ink-100/60 shrink-0"
             onClick={() => setSidebarOpen(true)}
             aria-label="Open navigation"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
           </button>
 
-          <div className="flex items-center gap-3 min-w-0 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
             <Wordmark
               to={user.role === 'creator' ? '/creator/dashboard' : '/brand/dashboard'}
               size="md"
@@ -174,13 +180,13 @@ export default function AppShell() {
             </ul>
           </nav>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-0.5 sm:gap-1.5 shrink-0 ml-auto">
             <button
               onClick={() => setCmdkOpen(true)}
               aria-label="Search"
-              className="lg:hidden inline-flex items-center justify-center w-10 h-10 text-ink-700 rounded-md hover:bg-ink-100/60"
+              className="lg:hidden inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 text-ink-700 rounded-md hover:bg-ink-100/60"
             >
-              <Search className="w-5 h-5" />
+              <Search className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
             <button
@@ -230,7 +236,7 @@ export default function AppShell() {
         </div>
       )}
 
-      <main key={location.pathname} id="main" className="flex-1 min-w-0 anim-page-in pb-24 md:pb-0 bg-paper-50">
+      <main key={location.pathname} id="main" className="flex-1 min-w-0 anim-page-in bg-paper-50">
         <Outlet />
       </main>
 
@@ -243,7 +249,7 @@ export default function AppShell() {
         onLogout={() => { logout(); navigate('/'); }}
       />
 
-      <MobileBottomBar primaryAction={primaryAction} onMenu={() => setSidebarOpen(true)} />
+
 
       <CommandPalette
         open={cmdkOpen}
@@ -332,34 +338,6 @@ function MobileDrawer({
   );
 }
 
-function MobileBottomBar({
-  primaryAction, onMenu,
-}: {
-  primaryAction: { to: string; label: string; icon: any };
-  onMenu: () => void;
-}) {
-  return (
-    <div className="md:hidden fixed bottom-0 inset-x-0 z-30 pointer-events-none">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 pb-3 sm:pb-4 safe-bottom">
-        <div className="flex items-center gap-2 pointer-events-auto">
-          <button
-            onClick={onMenu}
-            className="inline-flex items-center justify-center gap-1.5 h-12 px-3 bg-paper-50 border border-ink-200 rounded-md text-ink-900 font-semibold text-sm shadow-card"
-            aria-label="Open navigation"
-          >
-            <Menu className="w-4 h-4" />
-            Menu
-          </button>
-          <Link to={primaryAction.to} className="btn btn-primary btn-lg flex-1 shadow-pop">
-            <primaryAction.icon className="w-4 h-4" />
-            {primaryAction.label}
-            <ArrowUpRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function CommandPalette({
   open, onClose, role, nav, quickActions,
@@ -502,12 +480,12 @@ function NotificationBell() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="relative inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 text-ink-700 rounded-md hover:bg-ink-100/60 transition-colors"
+        className="relative inline-flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 text-ink-700 rounded-md hover:bg-ink-100/60 transition-colors"
         aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`}
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
         {unread > 0 && (
-          <span className="absolute top-1 right-1 bg-ember-500 text-paper-50 text-[10px] font-semibold rounded-sm min-w-[18px] h-[18px] flex items-center justify-center px-1">
+          <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-ember-500 text-paper-50 text-[10px] font-semibold rounded-sm min-w-[16px] sm:min-w-[18px] h-[16px] sm:h-[18px] flex items-center justify-center px-0.5 sm:px-1">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
@@ -515,7 +493,7 @@ function NotificationBell() {
       {mounted && (
         <div
           className={clsx(
-            'absolute right-0 mt-2 w-[min(calc(100vw-1.5rem),24rem)] sm:w-96 bg-paper-50 border border-ink-200 rounded-[14px] shadow-pop overflow-hidden z-50',
+            'absolute right-0 mt-2 w-[min(calc(100vw-1rem),24rem)] sm:w-96 bg-paper-50 border border-ink-200 rounded-[14px] shadow-pop overflow-hidden z-50 max-sm:-right-2',
             open ? 'anim-pop-in' : 'anim-pop-out pointer-events-none',
           )}
           style={{ transformOrigin: 'top right' }}
